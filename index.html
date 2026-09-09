@@ -3,427 +3,426 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cristalhills - Сюжетный Minecraft сервер</title>
+    <meta name="theme-color" content="#0a0e1a">
+    <title>Cristalhills — Minecraft Server</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-brand" onclick="navigateTo('home')" style="cursor: pointer;">
-            <span class="logo">💎</span>
-            <div class="brand-text">
-                <span class="brand-name" id="current-server-name">Cristalhills</span>
-                <span class="brand-tag">Minecraft Server</span>
-            </div>
-        </div>
-        <div class="nav-links">
-            <a href="#" class="nav-link active" data-page="home"><span class="nav-icon">🏠</span> Главная</a>
-            <a href="#" class="nav-link" data-page="servers-list"><span class="nav-icon">🌐</span> Серверы</a>
-            <a href="#" class="nav-link" data-page="support"><span class="nav-icon">💬</span> Поддержка</a>
-            <a href="#" class="nav-link" data-page="profile"><span class="nav-icon">👤</span> Профиль</a>
-            <a href="#" class="nav-link" id="admin-panel-link" data-page="admin" style="display: none;"><span class="nav-icon">🎛️</span> Админ-панель</a>
-            <a href="#" class="nav-link" id="auth-link" data-page="auth"><span class="nav-icon">🔑</span> Войти</a>
-        </div>
-    </nav>
-
-    <div id="home-page" class="page active">
-        <section class="hero">
-            <div class="hero-content">
-                <div class="server-status" id="server-status">
-                    <span class="status-dot"></span>
-                    <span id="status-text">Сервер онлайн</span>
-                </div>
-                <h1 class="hero-title" id="hero-server-name">Cristal<span class="highlight">hills</span></h1>
-                <p class="hero-subtitle" id="hero-description">
-                    Cristalhills это проект, со своим сюжетом и квестами, где есть много игроков, с которыми вы можете подружиться и играть вместе, наш проект развивается и уже как год доступен для всех пользователей из разных стран, ждём вас на нашем сервере, скопируйте айпи ниже и установите сборку, так же по кнопке снизу, удачной вам игры.
-                </p>
-                <div class="hero-buttons" id="ip-buttons"></div>
-                <div id="ip-copy-msg" class="copy-message"></div>
-            </div>
-        </section>
-
-        <section class="features">
-            <h2 class="section-title" id="features-title">Почему Cristalhills?</h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon" id="feature-icon-1">📖</div>
-                    <h3 id="feature-title-1">Сюжетные квесты</h3>
-                    <p id="feature-desc-1">Уникальная история с захватывающими приключениями</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon" id="feature-icon-2">⚔️</div>
-                    <h3 id="feature-title-2">PvP сражения</h3>
-                    <p id="feature-desc-2">Сбалансированные бои и турниры</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon" id="feature-icon-3">🏰</div>
-                    <h3 id="feature-title-3">Строительство</h3>
-                    <p id="feature-desc-3">Создавай замки вместе с друзьями</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon" id="feature-icon-4">👥</div>
-                    <h3 id="feature-title-4">Комьюнити</h3>
-                    <p id="feature-desc-4">Дружелюбное сообщество игроков</p>
-                </div>
-            </div>
-        </section>
-
-        <section class="stats">
-            <h2 class="section-title" id="stats-title">Информация о сервере</h2>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon" id="stat-icon-1">🎮</div>
-                    <div class="stat-number" id="stat-value-1">1.20.4</div>
-                    <div class="stat-label" id="stat-label-1">Версия Minecraft</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" id="stat-icon-2">🌍</div>
-                    <div class="stat-number" id="stat-value-2">3+</div>
-                    <div class="stat-label" id="stat-label-2">Регионов</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" id="stat-icon-3">📜</div>
-                    <div class="stat-number" id="stat-value-3">50+</div>
-                    <div class="stat-label" id="stat-label-3">Квестов</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" id="stat-icon-4">⚡</div>
-                    <div class="stat-number" id="stat-value-4">24/7</div>
-                    <div class="stat-label" id="stat-label-4">Работа сервера</div>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <div id="servers-list-page" class="page">
-        <div class="servers-page-container">
-            <h2 class="section-title">🌐 Ветки серверов</h2>
-            <p class="servers-page-desc">Выберите сервер для подключения</p>
-            <div class="servers-page-grid" id="servers-page-grid"></div>
+    <div id="unsupported-device" class="unsupported-device" style="display: none;">
+        <div class="unsupported-card">
+            <div class="unsupported-icon">💻</div>
+            <h1>Ваше устройство не поддерживается</h1>
+            <p>
+                Просим зайти на сайт с компьютера или ноутбука.
+            </p>
         </div>
     </div>
 
-    <div id="auth-page" class="page">
-        <div class="auth-container">
-            <div class="auth-card">
-                <h2 class="auth-title">🔐 Вход в аккаунт</h2>
-                <form id="login-form">
-                    <div class="form-group">
-                        <label for="login-username">Имя пользователя</label>
-                        <input type="text" id="login-username" class="form-input" placeholder="Введите логин" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="login-password">Пароль</label>
-                        <input type="password" id="login-password" class="form-input" placeholder="Введите пароль" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-full">Войти →</button>
-                    <div id="login-error" class="error-message"></div>
-                    <div style="text-align:center;margin-top:12px;"><a href="#" onclick="showForgotPassword()" style="font-size:13px;">Забыли пароль?</a></div>
-                </form>
-                <div class="auth-switch"><p>Нет аккаунта? <a href="#" onclick="showRegister()">Зарегистрироваться</a></p></div>
-            </div>
-            <div class="auth-card" id="register-card" style="display: none;">
-                <h2 class="auth-title">✨ Регистрация</h2>
-                <form id="register-form">
-                    <div class="form-group">
-                        <label for="register-username">Имя пользователя</label>
-                        <input type="text" id="register-username" class="form-input" placeholder="Придумайте логин" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="register-email">Email</label>
-                        <input type="email" id="register-email" class="form-input" placeholder="example@mail.com" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="register-password">Пароль</label>
-                        <input type="password" id="register-password" class="form-input" placeholder="Минимум 4 символа" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="register-confirm">Подтвердите пароль</label>
-                        <input type="password" id="register-confirm" class="form-input" placeholder="Повторите пароль" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-full">Зарегистрироваться →</button>
-                    <div id="register-error" class="error-message"></div>
-                    <div id="register-success" class="success-message"></div>
-                </form>
-                <div class="auth-switch"><p>Уже есть аккаунт? <a href="#" onclick="showLogin()">Войти</a></p></div>
-            </div>
-            <div class="auth-card" id="forgot-card" style="display: none;">
-                <h2 class="auth-title">🔑 Восстановление пароля</h2>
-                <form id="forgot-form">
-                    <div class="form-group">
-                        <label for="forgot-username">Имя пользователя</label>
-                        <input type="text" id="forgot-username" class="form-input" placeholder="Введите логин" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="forgot-email">Email</label>
-                        <input type="email" id="forgot-email" class="form-input" placeholder="Введите email" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-full">Отправить запрос →</button>
-                    <div id="forgot-error" class="error-message"></div>
-                    <div id="forgot-success" class="success-message"></div>
-                </form>
-                <div class="auth-switch"><p><a href="#" onclick="showLogin()">← Назад ко входу</a></p></div>
-            </div>
-        </div>
-    </div>
+    <div id="site-content">
+        <nav class="navbar">
+            <div class="nav-brand" id="brand-button" role="button" tabindex="0">
+                <span class="logo">💎</span>
 
-    <div id="profile-page" class="page">
-        <div class="profile-container">
-            <div class="profile-sidebar">
-                <div class="profile-avatar"><span id="profile-avatar-letter">A</span></div>
-                <h3 class="profile-name" id="profile-username">Гость</h3>
-                <div class="profile-rank" id="profile-rank">Игрок</div>
-            </div>
-            <div class="profile-content">
-                <div class="profile-header">
-                    <h2>Личный кабинет</h2>
-                    <button class="btn btn-danger" onclick="logout()">Выйти</button>
-                </div>
-                <div class="profile-section">
-                    <h3>ℹ️ Информация об аккаунте</h3>
-                    <div class="info-grid">
-                        <div class="info-item"><span class="info-label">Email:</span><span class="info-value" id="profile-email">не указан</span></div>
-                        <div class="info-item"><span class="info-label">Дата регистрации:</span><span class="info-value" id="profile-reg-date">-</span></div>
-                        <div class="info-item"><span class="info-label">Последний вход:</span><span class="info-value" id="profile-last-login">-</span></div>
-                    </div>
-                </div>
-                <div class="profile-section">
-                    <h3>⚙️ Действия</h3>
-                    <div class="action-buttons">
-                        <button class="btn btn-secondary" onclick="navigateTo('support')">💬 Техподдержка</button>
-                        <button class="btn btn-secondary" onclick="changePassword()">🔑 Сменить пароль</button>
-                        <button class="btn btn-danger" onclick="deleteAccount()" id="delete-account-btn">🗑️ Удалить аккаунт</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="admin-page" class="page">
-        <div class="admin-container">
-            <div class="admin-header">
-                <h1>🎛️ Панель администратора</h1>
-                <p class="admin-subtitle">Управление сервером</p>
-            </div>
-
-            <div class="admin-tabs">
-                <button class="admin-tab-btn active" onclick="switchAdminTab('servers')">🌐 Ветки</button>
-                <button class="admin-tab-btn" onclick="switchAdminTab('settings')">⚙️ Настройки</button>
-                <button class="admin-tab-btn" onclick="switchAdminTab('users')">👥 Пользователи</button>
-                <button class="admin-tab-btn" onclick="switchAdminTab('questions')">📬 Вопросы</button>
-            </div>
-
-            <div id="admin-tab-servers" class="admin-tab-content active">
-                <div class="admin-card">
-                    <h3>🌐 Ветки серверов</h3>
-                    <div class="servers-list" id="servers-list"></div>
-                    <button class="btn btn-primary btn-sm" onclick="showAddServerModal()" style="margin-top:16px;">+ Добавить ветку</button>
+                <div class="brand-text">
+                    <span class="brand-name" id="current-server-name">
+                        Cristalhills
+                    </span>
+                    <span class="brand-tag">Minecraft Server</span>
                 </div>
             </div>
 
-            <div id="admin-tab-settings" class="admin-tab-content">
-                <div class="admin-card">
-                    <h3>⚙️ Настройки сервера</h3>
-                    <div class="form-group">
-                        <label for="admin-status">Статус сервера</label>
-                        <select id="admin-status" class="form-input">
-                            <option value="online">🟢 Онлайн</option>
-                            <option value="maintenance">🟠 Обслуживание</option>
-                            <option value="offline">🔴 Оффлайн</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="admin-description">Описание</label>
-                        <textarea id="admin-description" class="form-input" rows="4"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="admin-features-title">Заголовок "Почему..."</label>
-                        <input type="text" id="admin-features-title" class="form-input" placeholder="Почему Cristalhills?">
-                    </div>
-                    <div class="form-group">
-                        <label for="admin-version">Версия Minecraft</label>
-                        <input type="text" id="admin-version" class="form-input" placeholder="1.20.4">
-                    </div>
-                    <div class="form-group">
-                        <label>IP адреса</label>
-                        <div id="admin-ips-list"></div>
-                        <button class="btn btn-secondary btn-sm" onclick="addNewIpField()" style="margin-top:10px;">+ IP</button>
-                    </div>
-                    <div class="form-group">
-                        <label>Сборки</label>
-                        <div id="admin-builds-list"></div>
-                        <button class="btn btn-secondary btn-sm" onclick="addNewBuildField()" style="margin-top:10px;">+ Сборка</button>
-                    </div>
-                    <hr style="border-color:var(--border);margin:20px 0;">
-                    <h4 style="margin-bottom:15px;">🎨 Кастомизация иконок</h4>
-                    <div class="form-group">
-                        <label>Преимущества (4 карточки)</label>
-                        <div id="admin-features-custom"></div>
-                    </div>
-                    <div class="form-group">
-                        <label>Статистика (4 карточки)</label>
-                        <div id="admin-stats-custom"></div>
-                    </div>
-                    <button class="btn btn-primary btn-lg" onclick="saveAdminSettings()">💾 Сохранить</button>
-                    <div id="admin-save-msg" class="success-message"></div>
-                </div>
+            <div class="nav-links">
+                <a href="#" class="nav-link active" data-page="home">
+                    <span class="nav-icon">🏠</span>
+                    <span>Главная</span>
+                </a>
+
+                <a href="#" class="nav-link" data-page="servers-list">
+                    <span class="nav-icon">🌐</span>
+                    <span>Серверы</span>
+                </a>
+
+                <a href="#" class="nav-link" data-page="support">
+                    <span class="nav-icon">💬</span>
+                    <span>Поддержка</span>
+                </a>
+
+                <a href="#" class="nav-link" data-page="profile">
+                    <span class="nav-icon">👤</span>
+                    <span>Профиль</span>
+                </a>
+
+                <a
+                    href="#"
+                    class="nav-link"
+                    id="admin-panel-link"
+                    data-page="admin"
+                    style="display: none;"
+                >
+                    <span class="nav-icon">🎛️</span>
+                    <span>Админка</span>
+                </a>
+
+                <a href="#" class="nav-link" id="auth-link" data-page="auth">
+                    <span class="nav-icon">🔑</span>
+                    <span>Войти</span>
+                </a>
             </div>
+        </nav>
 
-            <div id="admin-tab-users" class="admin-tab-content">
-                <div class="admin-card">
-                    <h3>👥 Пользователи</h3>
-                    <div class="search-box">
-                        <input type="text" id="user-search" class="form-input" placeholder="🔍 Поиск..." oninput="filterUsers()">
+        <main>
+            <section id="home-page" class="page active">
+                <section class="hero">
+                    <div class="hero-content">
+                        <div class="server-status" id="server-status">
+                            <span class="status-dot"></span>
+                            <span id="status-text">Сервер онлайн</span>
+                        </div>
+
+                        <h1 class="hero-title" id="hero-server-name">
+                            Cristalhills
+                        </h1>
+
+                        <p class="hero-subtitle" id="hero-description"></p>
+
+                        <div class="hero-buttons" id="ip-buttons"></div>
+                        <div id="ip-copy-msg" class="copy-message"></div>
                     </div>
-                    <div class="users-scroll-container">
-                        <div id="users-list" class="users-list"></div>
+                </section>
+
+                <section class="features">
+                    <h2 class="section-title" id="features-title">
+                        Почему Cristalhills?
+                    </h2>
+
+                    <div class="features-grid">
+                        <article class="feature-card">
+                            <div class="feature-icon" id="feature-icon-1">📖</div>
+                            <h3 id="feature-title-1">Сюжетные квесты</h3>
+                            <p id="feature-desc-1">
+                                Уникальная история
+                            </p>
+                        </article>
+
+                        <article class="feature-card">
+                            <div class="feature-icon" id="feature-icon-2">⚔️</div>
+                            <h3 id="feature-title-2">PvP сражения</h3>
+                            <p id="feature-desc-2">
+                                Сбалансированные бои
+                            </p>
+                        </article>
+
+                        <article class="feature-card">
+                            <div class="feature-icon" id="feature-icon-3">🏰</div>
+                            <h3 id="feature-title-3">Строительство</h3>
+                            <p id="feature-desc-3">
+                                Создавай замки
+                            </p>
+                        </article>
+
+                        <article class="feature-card">
+                            <div class="feature-icon" id="feature-icon-4">👥</div>
+                            <h3 id="feature-title-4">Комьюнити</h3>
+                            <p id="feature-desc-4">
+                                Играйте вместе
+                            </p>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="stats">
+                    <h2 class="section-title" id="stats-title">
+                        Информация о сервере
+                    </h2>
+
+                    <div class="stats-grid">
+                        <article class="stat-card">
+                            <div class="stat-icon" id="stat-icon-1">🎮</div>
+                            <div class="stat-number" id="stat-value-1">
+                                1.20.4
+                            </div>
+                            <div class="stat-label" id="stat-label-1">
+                                Версия Minecraft
+                            </div>
+                        </article>
+
+                        <article class="stat-card">
+                            <div class="stat-icon" id="stat-icon-2">🌍</div>
+                            <div class="stat-number" id="stat-value-2">
+                                3+
+                            </div>
+                            <div class="stat-label" id="stat-label-2">
+                                Регионов
+                            </div>
+                        </article>
+
+                        <article class="stat-card">
+                            <div class="stat-icon" id="stat-icon-3">📜</div>
+                            <div class="stat-number" id="stat-value-3">
+                                50+
+                            </div>
+                            <div class="stat-label" id="stat-label-3">
+                                Квестов
+                            </div>
+                        </article>
+
+                        <article class="stat-card">
+                            <div class="stat-icon" id="stat-icon-4">⚡</div>
+                            <div class="stat-number" id="stat-value-4">
+                                24/7
+                            </div>
+                            <div class="stat-label" id="stat-label-4">
+                                Работа сервера
+                            </div>
+                        </article>
+                    </div>
+                </section>
+            </section>
+
+            <section id="servers-list-page" class="page">
+                <div class="servers-page-container">
+                    <h2 class="section-title">🌐 Ветки серверов</h2>
+                    <p class="servers-page-desc">
+                        Выберите сервер для подключения
+                    </p>
+
+                    <div
+                        class="servers-page-grid"
+                        id="servers-page-grid"
+                    ></div>
+                </div>
+            </section>
+
+            <section id="auth-page" class="page">
+                <div class="auth-container">
+                    <div class="auth-card" id="login-card">
+                        <h2 class="auth-title">🔐 Вход в аккаунт</h2>
+
+                        <form id="login-form">
+                            <div class="form-group">
+                                <label for="login-username">
+                                    Имя пользователя
+                                </label>
+                                <input
+                                    type="text"
+                                    id="login-username"
+                                    class="form-input"
+                                    required
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="login-password">
+                                    Пароль
+                                </label>
+                                <input
+                                    type="password"
+                                    id="login-password"
+                                    class="form-input"
+                                    required
+                                >
+                            </div>
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary btn-full"
+                            >
+                                Войти
+                            </button>
+
+                            <div id="login-error" class="error-message"></div>
+                        </form>
+
+                        <div class="auth-switch">
+                            Нет аккаунта?
+                            <a
+                                href="#"
+                                id="show-register-link"
+                            >
+                                Зарегистрироваться
+                            </a>
+                        </div>
+                    </div>
+
+                    <div
+                        class="auth-card"
+                        id="register-card"
+                        style="display: none;"
+                    >
+                        <h2 class="auth-title">✨ Регистрация</h2>
+
+                        <form id="register-form">
+                            <div class="form-group">
+                                <label for="register-username">
+                                    Имя пользователя
+                                </label>
+                                <input
+                                    type="text"
+                                    id="register-username"
+                                    class="form-input"
+                                    required
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="register-email">Email</label>
+                                <input
+                                    type="email"
+                                    id="register-email"
+                                    class="form-input"
+                                    required
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="register-password">
+                                    Пароль
+                                </label>
+                                <input
+                                    type="password"
+                                    id="register-password"
+                                    class="form-input"
+                                    minlength="4"
+                                    required
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="register-confirm">
+                                    Повторите пароль
+                                </label>
+                                <input
+                                    type="password"
+                                    id="register-confirm"
+                                    class="form-input"
+                                    required
+                                >
+                            </div>
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary btn-full"
+                            >
+                                Зарегистрироваться
+                            </button>
+
+                            <div
+                                id="register-error"
+                                class="error-message"
+                            ></div>
+
+                            <div
+                                id="register-success"
+                                class="success-message"
+                            ></div>
+                        </form>
+
+                        <div class="auth-switch">
+                            Уже есть аккаунт?
+                            <a href="#" id="show-login-link">Войти</a>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div id="admin-tab-questions" class="admin-tab-content">
-                <div class="admin-card">
-                    <h3>📬 Вопросы</h3>
-                    <div id="admin-all-questions" class="questions-list"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+            <section id="profile-page" class="page">
+                <div class="profile-container">
+                    <aside class="profile-sidebar">
+                        <div class="profile-avatar">
+                            <span id="profile-avatar-letter">G</span>
+                        </div>
 
-    <div id="support-page" class="page">
-        <div class="support-container">
-            <h2 class="section-title">💬 Поддержка</h2>
-            <div class="support-grid">
-                <div class="support-questions">
-                    <h3>📬 Ваши вопросы</h3>
-                    <div id="questions-list" class="questions-list">
-                        <div class="question-item placeholder"><p>Здесь будут вопросы</p></div>
+                        <h3
+                            class="profile-name"
+                            id="profile-username"
+                        >
+                            Гость
+                        </h3>
+
+                        <div
+                            class="profile-rank"
+                            id="profile-rank"
+                        >
+                            Игрок
+                        </div>
+                    </aside>
+
+                    <div class="profile-content">
+                        <div class="profile-header">
+                            <h2>Личный кабинет</h2>
+
+                            <button
+                                class="btn btn-danger"
+                                id="logout-button"
+                            >
+                                Выйти
+                            </button>
+                        </div>
+
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Email:</span>
+                                <span
+                                    class="info-value"
+                                    id="profile-email"
+                                >
+                                    не указан
+                                </span>
+                            </div>
+
+                            <div class="info-item">
+                                <span class="info-label">
+                                    Дата регистрации:
+                                </span>
+                                <span
+                                    class="info-value"
+                                    id="profile-reg-date"
+                                >
+                                    -
+                                </span>
+                            </div>
+
+                            <div class="info-item">
+                                <span class="info-label">
+                                    Последний вход:
+                                </span>
+                                <span
+                                    class="info-value"
+                                    id="profile-last-login"
+                                >
+                                    -
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                    <button class="btn btn-primary" onclick="showNewQuestionModal()">+ Вопрос</button>
                 </div>
-                <div class="support-answers" id="admin-panel" style="display: none;">
-                    <h3>🎛️ Админ <span class="admin-badge">ADMIN</span></h3>
-                    <div id="admin-questions-list" class="questions-list">
-                        <div class="question-item placeholder"><p>Вопросы игроков</p></div>
+            </section>
+
+            <section id="admin-page" class="page">
+                <div class="admin-container">
+                    <div class="admin-header">
+                        <h1>🎛️ Панель администратора</h1>
+                        <p class="admin-subtitle">
+                            Управление серверами
+                        </p>
+                    </div>
+
+                    <div class="admin-card">
+                        <h3>🌐 Ветки серверов</h3>
+                        <div class="servers-list" id="servers-list"></div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
+            </section>
 
-    <div id="new-question-modal" class="modal">
-        <div class="modal-content">
-            <h3>✨ Вопрос</h3>
-            <form id="question-form">
-                <div class="form-group">
-                    <label for="question-title">Заголовок</label>
-                    <input type="text" id="question-title" class="form-input" required>
+            <section id="support-page" class="page">
+                <div class="support-container">
+                    <h2 class="section-title">💬 Поддержка</h2>
+                    <p>
+                        Если у вас есть вопросы, обратитесь к администрации.
+                    </p>
                 </div>
-                <div class="form-group">
-                    <label for="question-category">Категория</label>
-                    <select id="question-category" class="form-input">
-                        <option value="technical">🔧 Тех.проблема</option>
-                        <option value="gameplay">🎮 Игра</option>
-                        <option value="donation">💎 Донат</option>
-                        <option value="other">❓ Другое</option>
-                        <option value="password">🔑 Пароль</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="question-text">Описание</label>
-                    <textarea id="question-text" class="form-input" rows="5" required></textarea>
-                </div>
-                <div class="modal-buttons">
-                    <button type="submit" class="btn btn-primary">Отправить</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Отмена</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="view-question-modal" class="modal">
-        <div class="modal-content modal-large">
-            <h3 id="view-question-title"></h3>
-            <div class="question-meta">
-                <span id="view-question-author"></span>
-                <span id="view-question-date"></span>
-                <span id="view-question-category" class="category-badge"></span>
-                <span id="view-question-status-badge" class="status-badge"></span>
-            </div>
-            <div class="question-body" id="view-question-text"></div>
-            <div class="answer-section">
-                <h4>Ответы:</h4>
-                <div id="view-question-answers" class="answers-list"></div>
-                <div id="admin-answer-form" style="display: none;">
-                    <textarea id="answer-text" class="form-input" rows="4" placeholder="Ответ..."></textarea>
-                    <button class="btn btn-primary" onclick="submitAnswer()">Ответить</button>
-                    <button class="btn btn-success" onclick="completeQuestion()" style="margin-left:10px;">✅ Завершить</button>
-                </div>
-            </div>
-            <div id="player-complete-section" style="display:none;margin-top:16px;">
-                <button class="btn btn-success" onclick="playerCompleteQuestion()">✅ Завершить</button>
-            </div>
-            <button class="btn btn-secondary" onclick="closeViewModal()" style="margin-top:16px;">Закрыть</button>
-        </div>
-    </div>
-
-    <div id="promote-modal" class="modal">
-        <div class="modal-content">
-            <h3>👑 Назначить</h3>
-            <form id="promote-form">
-                <input type="hidden" id="promote-username">
-                <div class="form-group">
-                    <label>Роль</label>
-                    <select id="promote-rank" class="form-input">
-                        <option value="Мл.Админ">🔹 Мл.Админ</option>
-                        <option value="Гл.Админ">👑 Гл.Админ</option>
-                    </select>
-                </div>
-                <div class="modal-buttons">
-                    <button type="submit" class="btn btn-primary">Назначить</button>
-                    <button type="button" class="btn btn-secondary" onclick="closePromoteModal()">Отмена</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="assign-role-modal" class="modal">
-        <div class="modal-content">
-            <h3>🎯 Назначить за сервер</h3>
-            <form id="assign-role-form">
-                <input type="hidden" id="assign-username">
-                <div class="form-group">
-                    <label>Сервер</label>
-                    <select id="assign-server" class="form-input"></select>
-                </div>
-                <div class="form-group">
-                    <label>Роль</label>
-                    <select id="assign-role" class="form-input">
-                        <option value="chief">👑 Главный за сервер</option>
-                        <option value="helper">🔹 Помощник</option>
-                    </select>
-                </div>
-                <div class="modal-buttons">
-                    <button type="submit" class="btn btn-primary">Назначить</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeAssignModal()">Отмена</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="add-server-modal" class="modal">
-        <div class="modal-content">
-            <h3>🌐 Новая ветка</h3>
-            <form id="add-server-form">
-                <div class="form-group">
-                    <label for="new-server-name">Название</label>
-                    <input type="text" id="new-server-name" class="form-input" placeholder="Cristalhills" required>
-                </div>
-                <div class="modal-buttons">
-                    <button type="submit" class="btn btn-primary">Создать</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeAddServerModal()">Отмена</button>
-                </div>
-            </form>
-        </div>
+            </section>
+        </main>
     </div>
 
     <script src="script.js"></script>
