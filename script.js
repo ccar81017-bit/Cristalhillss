@@ -2,7 +2,23 @@ const ADMINS = [
     {
         username: "nullkotek",
         password: "garte454",
-        rank: "Гл.Админ"
+        rank: "Гл.Админ",
+        isAdmin: true,
+        isMainAdmin: true
+    },
+    {
+        username: "kisyna123",
+        password: "ks%43",
+        rank: "Мл.Админ",
+        isAdmin: true,
+        isMainAdmin: false
+    },
+    {
+        username: "hazbi0002",
+        password: "hz2@a",
+        rank: "Мл.Админ",
+        isAdmin: true,
+        isMainAdmin: false
     }
 ];
 
