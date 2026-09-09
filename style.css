@@ -217,4 +217,428 @@ a { color: var(--secondary); text-decoration: none; }
     .user-actions { justify-content: flex-start; }
     .server-card { flex-direction: column; align-items: flex-start; }
     .server-actions { width: 100%; justify-content: flex-end; }
+    /* =========================
+   Адаптация для планшетов
+   ========================= */
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    overflow-x: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+button,
+.nav-link,
+.nav-brand,
+.server-page-card,
+.question-item {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.navbar {
+    min-height: 70px;
+}
+
+.hero-content {
+    width: 100%;
+}
+
+.btn {
+    min-height: 44px;
+}
+
+.form-input {
+    min-height: 44px;
+}
+
+.modal {
+    overflow-y: auto;
+}
+
+.modal-content {
+    width: min(720px, 100%);
+}
+
+/* Планшеты и небольшие ноутбуки */
+@media (max-width: 1024px) {
+    .navbar {
+        padding: 12px 24px;
+        min-height: 72px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .nav-links {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: thin;
+    }
+
+    .nav-link {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .features-grid,
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .profile-container {
+        grid-template-columns: 240px 1fr;
+    }
+
+    .admin-container,
+    .servers-page-container,
+    .support-container {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+}
+
+/* Телефоны */
+@media (max-width: 700px) {
+    .navbar {
+        padding: 10px 14px;
+        gap: 10px;
+    }
+
+    .nav-brand {
+        width: 100%;
+    }
+
+    .brand-name {
+        font-size: 19px;
+    }
+
+    .brand-tag {
+        font-size: 10px;
+    }
+
+    .logo {
+        font-size: 27px;
+    }
+
+    .nav-links {
+        display: flex;
+        gap: 6px;
+        margin: 0 -2px;
+    }
+
+    .nav-link {
+        padding: 10px 12px;
+        font-size: 12px;
+        min-height: 42px;
+    }
+
+    .nav-icon {
+        font-size: 15px;
+    }
+
+    .page {
+        min-height: calc(100vh - 126px);
+    }
+
+    .hero {
+        min-height: 560px;
+        padding: 54px 16px;
+    }
+
+    .hero-title {
+        font-size: clamp(39px, 14vw, 62px);
+        line-height: 1.05;
+        letter-spacing: -1px;
+        overflow-wrap: anywhere;
+    }
+
+    .hero-subtitle {
+        font-size: 15px;
+        line-height: 1.55;
+        margin-bottom: 26px;
+    }
+
+    .hero-buttons {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .hero-buttons .btn {
+        width: 100%;
+    }
+
+    .btn-lg {
+        min-height: 58px;
+        padding: 12px 18px;
+    }
+
+    .features,
+    .stats,
+    .servers-page-container,
+    .support-container,
+    .admin-container {
+        padding: 40px 14px;
+    }
+
+    .section-title {
+        font-size: 26px;
+        line-height: 1.2;
+        margin-bottom: 28px;
+    }
+
+    .features-grid,
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .feature-card,
+    .stat-card {
+        padding: 24px 18px;
+    }
+
+    .feature-icon {
+        font-size: 37px;
+    }
+
+    .stat-number {
+        font-size: 32px;
+    }
+
+    .servers-page-desc {
+        margin-top: -16px;
+        margin-bottom: 24px;
+    }
+
+    .servers-page-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .server-page-card {
+        padding: 22px 18px;
+    }
+
+    .server-page-name {
+        font-size: 19px;
+        overflow-wrap: anywhere;
+    }
+
+    .profile-container,
+    .support-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        padding: 32px 14px;
+    }
+
+    .profile-sidebar,
+    .profile-content,
+    .support-questions,
+    .support-answers,
+    .admin-card {
+        padding: 22px 16px;
+        border-radius: 16px;
+    }
+
+    .profile-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .profile-header .btn {
+        width: 100%;
+    }
+
+    .info-item {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .info-value {
+        text-align: left;
+        max-width: 100%;
+    }
+
+    .action-buttons {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .action-buttons .btn {
+        width: 100%;
+    }
+
+    .admin-header h1 {
+        font-size: 28px;
+        line-height: 1.15;
+    }
+
+    .admin-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .admin-tab-btn {
+        width: 100%;
+        min-height: 46px;
+        padding: 10px 8px;
+        font-size: 12px;
+    }
+
+    .server-card {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 16px;
+    }
+
+    .server-info {
+        min-width: 0;
+    }
+
+    .server-name {
+        overflow-wrap: anywhere;
+    }
+
+    .server-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+    }
+
+    .server-actions .btn {
+        width: 100%;
+    }
+
+    .user-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .user-value {
+        text-align: left;
+        max-width: 100%;
+    }
+
+    .user-actions {
+        justify-content: stretch;
+    }
+
+    .user-actions .btn {
+        width: 100%;
+    }
+
+    .question-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .question-title {
+        padding-right: 24px;
+        overflow-wrap: anywhere;
+    }
+
+    .modal {
+        align-items: flex-start;
+        padding: 10px;
+    }
+
+    .modal-content {
+        width: 100%;
+        max-height: calc(100vh - 20px);
+        padding: 20px 16px;
+        border-radius: 16px;
+    }
+
+    .modal-buttons {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .modal-buttons .btn {
+        width: 100%;
+    }
+
+    .modal-large {
+        width: 100%;
+    }
+
+    #admin-ips-list > div,
+    #admin-builds-list > div,
+    #admin-features-custom > div,
+    #admin-stats-custom > div {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+        align-items: stretch !important;
+    }
+
+    #admin-ips-list input,
+    #admin-builds-list input,
+    #admin-features-custom input,
+    #admin-stats-custom input {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    #admin-ips-list button,
+    #admin-builds-list button {
+        width: 100%;
+    }
+
+    .admin-card .btn-lg {
+        width: 100%;
+    }
+}
+
+/* Очень узкие телефоны */
+@media (max-width: 390px) {
+    .nav-link {
+        padding: 9px 10px;
+        font-size: 11px;
+    }
+
+    .admin-tabs {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-title {
+        font-size: 40px;
+    }
+
+    .section-title {
+        font-size: 23px;
+    }
+
+    .auth-card {
+        padding: 24px 16px;
+    }
+}
+
+/* Устройства в альбомной ориентации */
+@media (max-height: 500px) and (orientation: landscape) {
+    .hero {
+        min-height: 460px;
+        padding-top: 35px;
+        padding-bottom: 35px;
+    }
+
+    .modal-content {
+        max-height: calc(100vh - 12px);
+    }
+}
 }
