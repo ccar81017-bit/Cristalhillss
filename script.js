@@ -84,65 +84,6 @@ const DEFAULT_SERVERS = [
         ]
     },
     {
-        id: "cristalhills-2",
-        name: "Cristalhills 2",
-        status: "online",
-        description:
-            "Вторая ветка сервера Cristalhills с новыми мирами и квестами.",
-        version: "1.20.4",
-        ips: [
-            {
-                name: "Дополнительный",
-                ip: "play2.cristalhills.net"
-            }
-        ],
-        builds: [],
-        featuresTitle: "Почему Cristalhills 2?",
-        features: [
-            {
-                icon: "🗺️",
-                title: "Новый мир",
-                desc: "Исследуйте новые территории"
-            },
-            {
-                icon: "⚔️",
-                title: "Сражения",
-                desc: "Участвуйте в PvP-боях"
-            },
-            {
-                icon: "🏗️",
-                title: "Строительство",
-                desc: "Создавайте собственные города"
-            },
-            {
-                icon: "👥",
-                title: "Игроки",
-                desc: "Играйте вместе с друзьями"
-            }
-        ],
-        stats: [
-            {
-                icon: "🎮",
-                value: "1.20.4",
-                label: "Версия Minecraft"
-            },
-            {
-                icon: "🌍",
-                value: "5+",
-                label: "Регионов"
-            },
-            {
-                icon: "📜",
-                value: "70+",
-                label: "Квестов"
-            },
-            {
-                icon: "⚡",
-                value: "24/7",
-                label: "Работа сервера"
-            }
-        ]
-    }
 ];
 
 let currentUser = null;
