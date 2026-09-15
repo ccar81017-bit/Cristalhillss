@@ -553,36 +553,53 @@ async function refreshAll() {
 
 document.addEventListener(
     "DOMContentLoaded",
-    function() {
-        const loginForm =
-            document.getElementById("login-form");
+    async function() {
+        setupNavigation();
+        setupForms();
+        setupBrandButton();
 
-        const registerForm =
-            document.getElementById("register-form");
+        const ready = await initSupabase();
 
-        const forgotForm =
-            document.getElementById("forgot-form");
-
-        if (loginForm) {
-            loginForm.addEventListener(
-                "submit",
-                handleLogin
-            );
+        if (!ready) {
+            servers = [cloneDefaultServer()];
+            updateUI();
+            updateProfile();
+            loadServer(0);
+            renderServersPage();
+            return;
         }
 
-        if (registerForm) {
-            registerForm.addEventListener(
-                "submit",
-                handleRegister
-            );
-        }
+        supabaseClient.auth.onAuthStateChange(
+            async function(event, session) {
+                if (
+                    event === "INITIAL_SESSION" ||
+                    event === "SIGNED_IN" ||
+                    event === "SIGNED_OUT" ||
+                    event === "USER_UPDATED"
+                ) {
+                    if (session && session.user) {
+                        await loadProfile(session.user);
+                    } else {
+                        currentUser = null;
+                    }
 
-        if (forgotForm) {
-            forgotForm.addEventListener(
-                "submit",
-                handleForgotPassword
-            );
-        }
+                    await loadServers();
+                    await loadQuestions();
+                    await loadUsers();
+                    await loadChangelog();
+                    await loadSocialLinks();
+
+                    updateUI();
+                    updateProfile();
+                    renderQuestions();
+                    renderServersPage();
+                    renderServersList();
+                }
+            }
+        );
+
+        await refreshAll();
+        setupRealtime();
     }
 );
 
@@ -865,31 +882,10 @@ function setupForms() {
     });
 }
 
-    forms.forEach(function(item) {
-        const form =
-            document.getElementById(item[0]);
-
-        if (form) {
-            form.addEventListener(
-                "submit",
-                item[1]
-            );
-        }
-    });
-
 async function handleLogin(event) {
     event.preventDefault();
 
-    const errorElement =
-        document.getElementById("login-error");
-
-    errorElement.textContent = "";
-
-    if (!supabaseReady || !supabaseClient) {
-        errorElement.textContent =
-            "❌ Supabase ещё не загрузился";
-        return;
-    }
+    if (!supabaseReady) return;
 
     const username =
         document
@@ -898,120 +894,52 @@ async function handleLogin(event) {
             .trim();
 
     const password =
-        document
-            .getElementById("login-password")
+        document.getElementById("login-password")
             .value;
 
-    if (!username || !password) {
-        errorElement.textContent =
-            "❌ Заполните все поля";
+    const error =
+        document.getElementById("login-error");
+
+    error.textContent = "";
+
+    const lookup =
+        await supabaseClient.rpc(
+            "get_email_by_username",
+            {
+                p_username: username
+            }
+        );
+
+    if (lookup.error || !lookup.data) {
+        error.textContent =
+            "❌ Пользователь не найден";
         return;
     }
 
-    try {
-        const lookup =
-            await supabaseClient.rpc(
-                "get_email_by_username",
-                {
-                    p_username: username
-                }
-            );
+    const result =
+        await supabaseClient.auth.signInWithPassword({
+            email: lookup.data,
+            password: password
+        });
 
-        if (lookup.error) {
-            console.error(
-                "Ошибка поиска email:",
-                lookup.error
-            );
-
-            errorElement.textContent =
-                "❌ Ошибка базы данных: " +
-                lookup.error.message;
-
-            return;
-        }
-
-        if (!lookup.data) {
-            errorElement.textContent =
-                "❌ Пользователь не найден";
-            return;
-        }
-
-        const result =
-            await supabaseClient.auth
-                .signInWithPassword({
-                    email: lookup.data,
-                    password: password
-                });
-
-        if (result.error) {
-            console.error(
-                "Ошибка входа:",
-                result.error
-            );
-
-            if (
-                /email not confirmed/i.test(
-                    result.error.message || ""
-                )
-            ) {
-                errorElement.textContent =
-                    "❌ Подтвердите email";
-            } else {
-                errorElement.textContent =
-                    "❌ Неверный логин или пароль";
-            }
-
-            return;
-        }
-
-        await loadProfile(result.data.user);
-
-        if (currentUser) {
-            await supabaseClient
-                .from("profiles")
-                .update({
-                    last_login:
-                        new Date().toISOString()
-                })
-                .eq("id", currentUser.id);
-        }
-
-        updateUI();
-        updateProfile();
-        renderUsersList();
-
-        event.target.reset();
-        navigateTo("profile");
-    } catch (error) {
-        console.error(
-            "Критическая ошибка входа:",
-            error
-        );
-
-        errorElement.textContent =
-            "❌ Ошибка подключения к серверу";
+    if (result.error) {
+        error.textContent =
+            "❌ Неверный логин или пароль";
+        return;
     }
+
+    await loadProfile(result.data.user);
+
+    updateUI();
+    updateProfile();
+    navigateTo("profile");
+    event.target.reset();
 }
 
 async function handleRegister(event) {
     event.preventDefault();
 
-    const errorElement =
-        document.getElementById("register-error");
-
-    const successElement =
-        document.getElementById(
-            "register-success"
-        );
-
-    errorElement.textContent = "";
-    successElement.textContent = "";
-
-    if (!supabaseReady || !supabaseClient) {
-        errorElement.textContent =
-            "❌ Supabase ещё не загрузился";
-        return;
-    }
+    if (!supabaseReady) return;
 
     const username =
         document
@@ -1027,125 +955,93 @@ async function handleRegister(event) {
             .toLowerCase();
 
     const password =
-        document
-            .getElementById("register-password")
+        document.getElementById("register-password")
             .value;
 
     const confirmation =
-        document
-            .getElementById("register-confirm")
+        document.getElementById("register-confirm")
             .value;
 
+    const error =
+        document.getElementById("register-error");
+
+    const success =
+        document.getElementById("register-success");
+
+    error.textContent = "";
+    success.textContent = "";
+
     if (username.length < 3) {
-        errorElement.textContent =
+        error.textContent =
             "❌ Ник должен содержать минимум 3 символа";
         return;
     }
 
     if (password !== confirmation) {
-        errorElement.textContent =
+        error.textContent =
             "❌ Пароли не совпадают";
         return;
     }
 
     if (password.length < 4) {
-        errorElement.textContent =
+        error.textContent =
             "❌ Минимум 4 символа";
         return;
     }
 
-    try {
-        const existing =
-            await supabaseClient.rpc(
-                "get_email_by_username",
-                {
-                    p_username: username
-                }
-            );
-
-        if (existing.error) {
-            errorElement.textContent =
-                "❌ Не удалось проверить ник";
-            return;
-        }
-
-        if (existing.data) {
-            errorElement.textContent =
-                "❌ Такой ник уже занят";
-            return;
-        }
-
-        const result =
-            await supabaseClient.auth.signUp({
-                email: email,
-                password: password,
-                options: {
-                    data: {
-                        username: username
-                    }
-                }
-            });
-
-        if (result.error) {
-            console.error(
-                "Ошибка регистрации:",
-                result.error
-            );
-
-            errorElement.textContent =
-                "❌ " + result.error.message;
-
-            return;
-        }
-
-        event.target.reset();
-
-        if (result.data.session) {
-            await loadProfile(result.data.user);
-
-            successElement.textContent =
-                "✅ Аккаунт создан";
-
-            updateUI();
-            updateProfile();
-
-            setTimeout(function() {
-                navigateTo("profile");
-            }, 700);
-        } else {
-            successElement.textContent =
-                "✅ Подтвердите email и войдите";
-        }
-    } catch (error) {
-        console.error(
-            "Критическая ошибка регистрации:",
-            error
+    const existing =
+        await supabaseClient.rpc(
+            "get_email_by_username",
+            {
+                p_username: username
+            }
         );
 
-        errorElement.textContent =
-            "❌ Ошибка подключения к серверу";
+    if (existing.data) {
+        error.textContent = "❌ Ник занят";
+        return;
+    }
+
+    const result =
+        await supabaseClient.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    username: username
+                }
+            }
+        });
+
+    if (result.error) {
+        error.textContent =
+            "❌ " + result.error.message;
+        return;
+    }
+
+    event.target.reset();
+
+    if (result.data.session) {
+        await loadProfile(result.data.user);
+        success.textContent =
+            "✅ Аккаунт создан";
+
+        updateUI();
+        updateProfile();
+
+        setTimeout(function() {
+            navigateTo("profile");
+        }, 500);
+    } else {
+        success.textContent =
+            "✅ Проверьте email для подтверждения";
     }
 }
 
 async function handleForgotPassword(event) {
     event.preventDefault();
 
-    const errorElement =
-        document.getElementById("forgot-error");
-
-    const successElement =
-        document.getElementById(
-            "forgot-success"
-        );
-
-    errorElement.textContent = "";
-    successElement.textContent = "";
-
-    if (!supabaseReady || !supabaseClient) {
-        errorElement.textContent =
-            "❌ Supabase ещё не загрузился";
-        return;
-    }
+    if (!supabaseReady) return;
 
     const username =
         document
@@ -1160,63 +1056,50 @@ async function handleForgotPassword(event) {
             .trim()
             .toLowerCase();
 
-    if (!username || !email) {
-        errorElement.textContent =
-            "❌ Заполните все поля";
+    const error =
+        document.getElementById("forgot-error");
+
+    const success =
+        document.getElementById("forgot-success");
+
+    const lookup =
+        await supabaseClient.rpc(
+            "get_email_by_username",
+            {
+                p_username: username
+            }
+        );
+
+    if (
+        lookup.error ||
+        !lookup.data ||
+        lookup.data.toLowerCase() !== email
+    ) {
+        error.textContent =
+            "❌ Ник и email не совпадают";
         return;
     }
 
-    try {
-        const lookup =
-            await supabaseClient.rpc(
-                "get_email_by_username",
-                {
-                    p_username: username
-                }
-            );
-
-        if (
-            lookup.error ||
-            !lookup.data ||
-            lookup.data.toLowerCase() !== email
-        ) {
-            errorElement.textContent =
-                "❌ Ник и email не совпадают";
-            return;
-        }
-
-        const redirectUrl =
-            window.location.origin +
-            window.location.pathname;
-
-        const result =
-            await supabaseClient.auth
-                .resetPasswordForEmail(
-                    email,
-                    {
-                        redirectTo: redirectUrl
-                    }
-                );
-
-        if (result.error) {
-            errorElement.textContent =
-                "❌ " + result.error.message;
-            return;
-        }
-
-        successElement.textContent =
-            "✅ Ссылка отправлена на email";
-
-        event.target.reset();
-    } catch (error) {
-        console.error(
-            "Ошибка восстановления:",
-            error
+    const result =
+        await supabaseClient.auth.resetPasswordForEmail(
+            email,
+            {
+                redirectTo:
+                    window.location.origin +
+                    window.location.pathname
+            }
         );
 
-        errorElement.textContent =
-            "❌ Ошибка подключения к серверу";
+    if (result.error) {
+        error.textContent =
+            "❌ " + result.error.message;
+        return;
     }
+
+    success.textContent =
+        "✅ Ссылка отправлена на email";
+
+    event.target.reset();
 }
 
 async function handlePromote(event) {
@@ -3663,3 +3546,37 @@ Object.assign(window, {
     deleteSocialLink,
     resetSocialForm
 });
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+        const loginForm =
+            document.getElementById("login-form");
+
+        const registerForm =
+            document.getElementById("register-form");
+
+        const forgotForm =
+            document.getElementById("forgot-form");
+
+        if (loginForm) {
+            loginForm.addEventListener(
+                "submit",
+                handleLogin
+            );
+        }
+
+        if (registerForm) {
+            registerForm.addEventListener(
+                "submit",
+                handleRegister
+            );
+        }
+
+        if (forgotForm) {
+            forgotForm.addEventListener(
+                "submit",
+                handleForgotPassword
+            );
+        }
+    }
+);
