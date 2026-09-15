@@ -11,12 +11,43 @@ let currentUser = null;
 let users = [];
 let servers = [];
 let questions = [];
+let changelog = [];
+let socialLinks = [];
 
 let currentServerIndex = Number(
-    localStorage.getItem("cristalhills_current_server") || 0
+    localStorage.getItem(
+        "cristalhills_current_server"
+    ) || 0
 );
 
 let currentQuestionId = null;
+
+const SOCIAL_ICONS = [
+    "🔗",
+    "📱",
+    "💬",
+    "📢",
+    "🌐",
+    "🎮",
+    "▶️",
+    "🎵",
+    "📸",
+    "🐦",
+    "💙",
+    "💜",
+    "🟢",
+    "🔴",
+    "🟠",
+    "🟣",
+    "🟡",
+    "⚫",
+    "🟦",
+    "🟪",
+    "🎥",
+    "📡",
+    "👥",
+    "⭐"
+];
 
 const DEFAULT_SERVER = {
     id: "default-cristalhills",
@@ -147,7 +178,9 @@ function normalizeServer(row) {
         featuresTitle:
             row.features_title ||
             row.featuresTitle ||
-            "Почему " + (row.name || fallback.name) + "?",
+            "Почему " +
+                (row.name || fallback.name) +
+                "?",
         features:
             Array.isArray(row.features) &&
             row.features.length >= 4
@@ -183,7 +216,9 @@ function normalizeQuestion(row) {
         title: row.title || "",
         category: row.category || "other",
         text: row.description || "",
-        date: row.date || formatDate(row.created_at),
+        date:
+            row.date ||
+            formatDate(row.created_at),
         answer: row.answer || null,
         answerBy: row.answer_by || null,
         answers: Array.isArray(row.answers)
@@ -221,13 +256,15 @@ async function initSupabase() {
         console.error(
             "Supabase JS library is not loaded"
         );
+
         return false;
     }
 
-    supabaseClient = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY
-    );
+    supabaseClient =
+        window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_PUBLISHABLE_KEY
+        );
 
     supabaseReady = true;
     return true;
@@ -239,13 +276,14 @@ async function loadProfile(authUser) {
         return;
     }
 
-    const result = await supabaseClient
-        .from("profiles")
-        .select(
-            "id, username, email, rank, chief_for, helper_for, created_at, last_login"
-        )
-        .eq("id", authUser.id)
-        .maybeSingle();
+    const result =
+        await supabaseClient
+            .from("profiles")
+            .select(
+                "id, username, email, rank, chief_for, helper_for, created_at, last_login"
+            )
+            .eq("id", authUser.id)
+            .maybeSingle();
 
     if (result.error) {
         console.error(
@@ -431,11 +469,80 @@ async function loadUsers() {
     users = result.data || [];
 }
 
+async function loadChangelog() {
+    if (!supabaseReady) {
+        changelog = [];
+        renderChangelog();
+        renderAdminChangelog();
+        return;
+    }
+
+    const result =
+        await supabaseClient
+            .from("changelog")
+            .select("*")
+            .order("created_at", {
+                ascending: false
+            });
+
+    if (result.error) {
+        console.error(
+            "Changelog load error:",
+            result.error
+        );
+
+        changelog = [];
+    } else {
+        changelog = result.data || [];
+    }
+
+    renderChangelog();
+    renderAdminChangelog();
+}
+
+async function loadSocialLinks() {
+    if (!supabaseReady) {
+        socialLinks = [];
+        renderSocialLinks();
+        renderAdminSocialLinks();
+        renderSocialIconPicker();
+        return;
+    }
+
+    const result =
+        await supabaseClient
+            .from("social_links")
+            .select("*")
+            .order("sort_order", {
+                ascending: true
+            })
+            .order("created_at", {
+                ascending: false
+            });
+
+    if (result.error) {
+        console.error(
+            "Social links load error:",
+            result.error
+        );
+
+        socialLinks = [];
+    } else {
+        socialLinks = result.data || [];
+    }
+
+    renderSocialLinks();
+    renderAdminSocialLinks();
+    renderSocialIconPicker();
+}
+
 async function refreshAll() {
     await loadCurrentUser();
     await loadServers();
     await loadQuestions();
     await loadUsers();
+    await loadChangelog();
+    await loadSocialLinks();
 
     updateUI();
     updateProfile();
@@ -479,6 +586,8 @@ document.addEventListener(
                     await loadServers();
                     await loadQuestions();
                     await loadUsers();
+                    await loadChangelog();
+                    await loadSocialLinks();
 
                     updateUI();
                     updateProfile();
@@ -552,6 +661,28 @@ function setupRealtime() {
                     renderUsersList();
                 }
             )
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "changelog"
+                },
+                async function() {
+                    await loadChangelog();
+                }
+            )
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "social_links"
+                },
+                async function() {
+                    await loadSocialLinks();
+                }
+            )
             .subscribe(function(status) {
                 if (status === "CHANNEL_ERROR") {
                     console.warn(
@@ -573,18 +704,24 @@ function setupBrandButton() {
 
     if (!brand) return;
 
-    brand.addEventListener("click", function() {
-        navigateTo("home");
-    });
-
-    brand.addEventListener("keydown", function(event) {
-        if (
-            event.key === "Enter" ||
-            event.key === " "
-        ) {
+    brand.addEventListener(
+        "click",
+        function() {
             navigateTo("home");
         }
-    });
+    );
+
+    brand.addEventListener(
+        "keydown",
+        function(event) {
+            if (
+                event.key === "Enter" ||
+                event.key === " "
+            ) {
+                navigateTo("home");
+            }
+        }
+    );
 }
 
 function setupNavigation() {
@@ -605,6 +742,7 @@ function setupNavigation() {
                                 ? "profile"
                                 : "auth"
                         );
+
                         return;
                     }
 
@@ -617,6 +755,7 @@ function setupNavigation() {
                                 ? "profile"
                                 : "auth"
                         );
+
                         return;
                     }
 
@@ -706,6 +845,9 @@ function navigateTo(page) {
         loadAdminSettings();
         renderUsersList();
         renderAdminAllQuestions();
+        renderAdminChangelog();
+        renderAdminSocialLinks();
+        renderSocialIconPicker();
     }
 
     window.scrollTo({
@@ -722,7 +864,9 @@ function setupForms() {
         ["question-form", handleQuestionSubmit],
         ["promote-form", handlePromote],
         ["add-server-form", handleAddServer],
-        ["assign-role-form", handleAssignRole]
+        ["assign-role-form", handleAssignRole],
+        ["changelog-form", handleChangelogSubmit],
+        ["social-form", handleSocialSubmit]
     ];
 
     forms.forEach(function(item) {
@@ -785,15 +929,6 @@ async function handleLogin(event) {
     }
 
     await loadProfile(result.data.user);
-
-    if (currentUser) {
-        await supabaseClient
-            .from("profiles")
-            .update({
-                last_login: new Date().toISOString()
-            })
-            .eq("id", currentUser.id);
-    }
 
     updateUI();
     updateProfile();
@@ -979,7 +1114,8 @@ async function handlePromote(event) {
     }
 
     const username =
-        document.getElementById("promote-username")
+        document
+            .getElementById("promote-username")
             .value
             .trim();
 
@@ -1033,18 +1169,21 @@ async function handleAssignRole(event) {
     }
 
     const username =
-        document.getElementById("assign-username")
+        document
+            .getElementById("assign-username")
             .value
             .trim();
 
     const serverIndex =
         Number(
-            document.getElementById("assign-server")
+            document
+                .getElementById("assign-server")
                 .value
         );
 
     const role =
-        document.getElementById("assign-role")
+        document
+            .getElementById("assign-role")
             .value;
 
     const target =
@@ -1115,10 +1254,10 @@ async function handleAddServer(event) {
         cloneDefaultServer();
 
     server.name = name;
+    server.id = createServerId(name);
     server.description = "Сервер " + name;
     server.featuresTitle =
         "Почему " + name + "?";
-    server.id = createServerId(name);
 
     const result =
         await supabaseClient
@@ -1170,7 +1309,7 @@ function updateUI() {
             "delete-account-btn"
         );
 
-    const adminSupport =
+    const adminPanel =
         document.getElementById("admin-panel");
 
     if (currentUser) {
@@ -1192,8 +1331,8 @@ function updateUI() {
                     : "inline-flex";
         }
 
-        if (adminSupport) {
-            adminSupport.style.display =
+        if (adminPanel) {
+            adminPanel.style.display =
                 currentUser.isAdmin
                     ? "block"
                     : "none";
@@ -1214,8 +1353,8 @@ function updateUI() {
             deleteButton.style.display = "inline-flex";
         }
 
-        if (adminSupport) {
-            adminSupport.style.display = "none";
+        if (adminPanel) {
+            adminPanel.style.display = "none";
         }
     }
 }
@@ -1328,7 +1467,7 @@ function loadServer(index) {
             "hero-description"
         );
 
-    const title =
+    const featuresTitle =
         document.getElementById(
             "features-title"
         );
@@ -1346,8 +1485,8 @@ function loadServer(index) {
             server.description;
     }
 
-    if (title) {
-        title.textContent =
+    if (featuresTitle) {
+        featuresTitle.textContent =
             server.featuresTitle;
     }
 
@@ -1357,14 +1496,14 @@ function loadServer(index) {
     }
 
     if (statusText) {
-        const names = {
+        const statusNames = {
             online: "Сервер онлайн",
             maintenance: "Обслуживание",
             offline: "Оффлайн"
         };
 
         statusText.textContent =
-            names[server.status] ||
+            statusNames[server.status] ||
             "Сервер онлайн";
     }
 
@@ -1399,11 +1538,19 @@ function renderFeatures(features) {
                 "feature-desc-" + (i + 1)
             );
 
-        if (icon) icon.textContent = item.icon;
-        if (title) title.textContent = item.title;
+        if (icon) {
+            icon.textContent =
+                item.icon || "⭐";
+        }
+
+        if (title) {
+            title.textContent =
+                item.title || "";
+        }
+
         if (description) {
             description.textContent =
-                item.desc;
+                item.desc || "";
         }
     }
 }
@@ -1432,9 +1579,20 @@ function renderStats(stats) {
                 "stat-label-" + (i + 1)
             );
 
-        if (icon) icon.textContent = item.icon;
-        if (value) value.textContent = item.value;
-        if (label) label.textContent = item.label;
+        if (icon) {
+            icon.textContent =
+                item.icon || "⭐";
+        }
+
+        if (value) {
+            value.textContent =
+                item.value || "";
+        }
+
+        if (label) {
+            label.textContent =
+                item.label || "";
+        }
     }
 }
 
@@ -1648,13 +1806,15 @@ function renderServersList() {
             'onclick="switchToServer(' +
             index +
             ')">Выбрать</button>' +
-            (currentUser &&
-            currentUser.isMainAdmin &&
-            index !== 0
-                ? '<button class="btn btn-danger btn-sm" onclick="deleteServer(' +
-                  index +
-                  ')">🗑️</button>'
-                : "") +
+            (
+                currentUser &&
+                currentUser.isMainAdmin &&
+                index !== 0
+                    ? '<button class="btn btn-danger btn-sm" onclick="deleteServer(' +
+                      index +
+                      ')">🗑️</button>'
+                    : ""
+            ) +
             "</div>";
 
         container.appendChild(card);
@@ -1712,11 +1872,13 @@ function renderAdminIps() {
             '" value="' +
             escapeHtml(item.name || "") +
             '" placeholder="Название">' +
+
             '<input class="form-input" data-ip-value="' +
             index +
             '" value="' +
             escapeHtml(item.ip || "") +
             '" placeholder="IP">' +
+
             '<button class="btn btn-danger btn-sm" type="button" onclick="removeIp(' +
             index +
             ')">🗑️</button>';
@@ -1748,11 +1910,13 @@ function renderAdminBuilds() {
             '" value="' +
             escapeHtml(item.name || "") +
             '" placeholder="Название">' +
+
             '<input class="form-input" data-build-url="' +
             index +
             '" value="' +
             escapeHtml(item.url || "") +
             '" placeholder="Ссылка">' +
+
             '<button class="btn btn-danger btn-sm" type="button" onclick="removeBuild(' +
             index +
             ')">🗑️</button>';
@@ -1786,19 +1950,22 @@ function renderAdminFeatures() {
             document.createElement("div");
 
         row.innerHTML =
-            '<span>' +
+            "<span>" +
             (i + 1) +
             ".</span>" +
+
             '<input class="form-input" id="f-icon-' +
             i +
             '" value="' +
             escapeHtml(item.icon) +
             '" placeholder="Иконка">' +
+
             '<input class="form-input" id="f-title-' +
             i +
             '" value="' +
             escapeHtml(item.title) +
             '" placeholder="Название">' +
+
             '<input class="form-input" id="f-desc-' +
             i +
             '" value="' +
@@ -1834,19 +2001,22 @@ function renderAdminStats() {
             document.createElement("div");
 
         row.innerHTML =
-            '<span>' +
+            "<span>" +
             (i + 1) +
             ".</span>" +
+
             '<input class="form-input" id="s-icon-' +
             i +
             '" value="' +
             escapeHtml(item.icon) +
             '" placeholder="Иконка">' +
+
             '<input class="form-input" id="s-value-' +
             i +
             '" value="' +
             escapeHtml(item.value) +
             '" placeholder="Значение">' +
+
             '<input class="form-input" id="s-label-' +
             i +
             '" value="' +
@@ -1855,61 +2025,6 @@ function renderAdminStats() {
 
         container.appendChild(row);
     }
-}
-
-function addNewIpField() {
-    const server =
-        servers[currentServerIndex];
-
-    if (!server) return;
-
-    server.ips.push({
-        name: "Новый IP",
-        ip: "play.example.com"
-    });
-
-    renderAdminIps();
-}
-
-function addNewBuildField() {
-    const server =
-        servers[currentServerIndex];
-
-    if (!server) return;
-
-    server.builds.push({
-        name: "Новая сборка",
-        url: "https://example.com"
-    });
-
-    renderAdminBuilds();
-}
-
-function removeIp(index) {
-    const server =
-        servers[currentServerIndex];
-
-    if (!server) return;
-
-    if (server.ips.length <= 1) {
-        alert(
-            "⚠️ Должен остаться хотя бы один IP"
-        );
-        return;
-    }
-
-    server.ips.splice(index, 1);
-    renderAdminIps();
-}
-
-function removeBuild(index) {
-    const server =
-        servers[currentServerIndex];
-
-    if (!server) return;
-
-    server.builds.splice(index, 1);
-    renderAdminBuilds();
 }
 
 async function saveAdminSettings() {
@@ -2056,7 +2171,9 @@ async function saveAdminSettings() {
 
 function renderUsersList() {
     const container =
-        document.getElementById("users-list");
+        document.getElementById(
+            "users-list"
+        );
 
     if (!container) return;
 
@@ -2070,9 +2187,6 @@ function renderUsersList() {
     }
 
     users.forEach(function(user) {
-        const isCurrent =
-            currentUser.id === user.id;
-
         const card =
             document.createElement("div");
 
@@ -2084,9 +2198,6 @@ function renderUsersList() {
                     ? " admin"
                     : ""
             );
-
-        const role =
-            user.rank || "Игрок";
 
         card.innerHTML =
             '<div class="user-row">' +
@@ -2106,13 +2217,13 @@ function renderUsersList() {
             '<div class="user-row">' +
             '<span class="user-label">🏷️</span>' +
             '<span class="user-value">' +
-            escapeHtml(role) +
+            escapeHtml(user.rank || "Игрок") +
             "</span>" +
             "</div>";
 
         if (
             currentUser.isMainAdmin &&
-            !isCurrent
+            currentUser.id !== user.id
         ) {
             const actions =
                 document.createElement("div");
@@ -2148,7 +2259,9 @@ function filterUsers() {
             : "";
 
     document
-        .querySelectorAll("#users-list .user-card")
+        .querySelectorAll(
+            "#users-list .user-card"
+        )
         .forEach(function(card) {
             card.style.display =
                 !value ||
@@ -2160,14 +2273,1106 @@ function filterUsers() {
         });
 }
 
-function openAssignModal(username) {
-    if (!currentUser || !currentUser.isMainAdmin) {
+function renderQuestions() {
+    const list =
+        document.getElementById(
+            "questions-list"
+        );
+
+    const adminList =
+        document.getElementById(
+            "admin-questions-list"
+        );
+
+    if (!list || !adminList) return;
+
+    const mine =
+        currentUser
+            ? questions.filter(function(item) {
+                return (
+                    item.userId === currentUser.id ||
+                    item.author === currentUser.username
+                );
+            })
+            : [];
+
+    list.innerHTML =
+        mine.length
+            ? ""
+            : '<div class="question-item placeholder">📭</div>';
+
+    adminList.innerHTML =
+        questions.length
+            ? ""
+            : '<div class="question-item placeholder">📥</div>';
+
+    mine
+        .filter(function(item) {
+            return !item.closed;
+        })
+        .forEach(function(item) {
+            list.appendChild(
+                createQuestionCard(item)
+            );
+        });
+
+    if (currentUser && currentUser.isAdmin) {
+        questions
+            .filter(function(item) {
+                return !item.closed;
+            })
+            .forEach(function(item) {
+                adminList.appendChild(
+                    createQuestionCard(item)
+                );
+            });
+    }
+}
+
+function renderAdminAllQuestions() {
+    const container =
+        document.getElementById(
+            "admin-all-questions"
+        );
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    questions.forEach(function(item) {
+        container.appendChild(
+            createQuestionCard(item)
+        );
+    });
+}
+
+function createQuestionCard(item) {
+    const card =
+        document.createElement("div");
+
+    card.className =
+        "question-item";
+
+    if (item.isUrgent) {
+        card.classList.add("urgent");
+    }
+
+    if (item.closed) {
+        card.classList.add("closed");
+    }
+
+    const answered =
+        Boolean(item.answer) ||
+        (
+            item.answers &&
+            item.answers.length > 0
+        );
+
+    const statusClass =
+        item.closed
+            ? "status-closed"
+            : answered
+                ? "status-answered"
+                : "status-open";
+
+    const statusText =
+        item.closed
+            ? "✅"
+            : answered
+                ? "💬"
+                : "⏳";
+
+    card.innerHTML =
+        '<div class="question-row">' +
+        '<div class="question-title">' +
+        escapeHtml(item.title) +
+        "</div>" +
+        '<span class="status ' +
+        statusClass +
+        '">' +
+        statusText +
+        "</span>" +
+        "</div>" +
+
+        '<div class="question-details">' +
+        escapeHtml(item.author) +
+        " • " +
+        escapeHtml(item.date) +
+        "</div>";
+
+    card.addEventListener(
+        "click",
+        function() {
+            openQuestionView(item.id);
+        }
+    );
+
+    return card;
+}
+
+function renderChangelog() {
+    const container =
+        document.getElementById(
+            "changelog-list"
+        );
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!changelog.length) {
+        container.innerHTML =
+            '<div class="changelog-empty">' +
+            "Пока нет опубликованных изменений." +
+            "</div>";
+
+        return;
+    }
+
+    changelog.forEach(function(item) {
+        const article =
+            document.createElement("article");
+
+        article.className =
+            "changelog-item";
+
+        article.innerHTML =
+            '<div class="changelog-item-title">' +
+            escapeHtml(item.title) +
+            "</div>" +
+
+            '<div class="changelog-item-description">' +
+            escapeHtml(item.description) +
+            "</div>" +
+
+            '<div class="changelog-item-date">' +
+            formatDate(item.created_at) +
+            "</div>";
+
+        container.appendChild(article);
+    });
+}
+
+function renderAdminChangelog() {
+    const container =
+        document.getElementById(
+            "admin-changelog-list"
+        );
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!changelog.length) {
+        container.innerHTML =
+            '<div class="changelog-empty">' +
+            "Изменений пока нет." +
+            "</div>";
+
+        return;
+    }
+
+    changelog.forEach(function(item) {
+        const row =
+            document.createElement("div");
+
+        row.className =
+            "admin-changelog-item";
+
+        row.innerHTML =
+            '<div class="admin-changelog-content">' +
+            '<div class="admin-changelog-title">' +
+            escapeHtml(item.title) +
+            "</div>" +
+
+            '<div class="admin-changelog-description">' +
+            escapeHtml(item.description) +
+            "</div>" +
+
+            '<div class="admin-changelog-date">' +
+            formatDate(item.created_at) +
+            "</div>" +
+            "</div>" +
+
+            '<div class="admin-changelog-actions">' +
+            '<button class="btn btn-secondary btn-sm" onclick="editChangelog(' +
+            item.id +
+            ')">Изменить</button>' +
+
+            '<button class="btn btn-danger btn-sm" onclick="deleteChangelog(' +
+            item.id +
+            ')">Удалить</button>' +
+            "</div>";
+
+        container.appendChild(row);
+    });
+}
+
+async function handleChangelogSubmit(event) {
+    event.preventDefault();
+
+    if (
+        !currentUser ||
+        currentUser.isMainAdmin !== true ||
+        !supabaseReady
+    ) {
         alert(
-            "❌ Только главный администратор может назначать роли"
+            "❌ Только главный администратор может изменять список изменений"
         );
         return;
     }
 
+    const title =
+        document.getElementById(
+            "changelog-title"
+        ).value.trim();
+
+    const description =
+        document.getElementById(
+            "changelog-description"
+        ).value.trim();
+
+    const editId =
+        document.getElementById(
+            "changelog-edit-id"
+        ).value;
+
+    let result;
+
+    if (editId) {
+        result = await supabaseClient
+            .from("changelog")
+            .update({
+                title: title,
+                description: description,
+                updated_at:
+                    new Date().toISOString()
+            })
+            .eq("id", Number(editId));
+    } else {
+        result = await supabaseClient
+            .from("changelog")
+            .insert({
+                title: title,
+                description: description
+            });
+    }
+
+    if (result.error) {
+        alert(
+            "❌ Не удалось сохранить изменение: " +
+            result.error.message
+        );
+        return;
+    }
+
+    resetChangelogForm();
+    await loadChangelog();
+
+    const message =
+        document.getElementById(
+            "changelog-save-message"
+        );
+
+    if (message) {
+        message.textContent =
+            "✅ Список изменений обновлён";
+
+        setTimeout(function() {
+            message.textContent = "";
+        }, 3000);
+    }
+}
+
+function editChangelog(id) {
+    const item =
+        changelog.find(function(change) {
+            return Number(change.id) === Number(id);
+        });
+
+    if (!item) return;
+
+    document.getElementById(
+        "changelog-edit-id"
+    ).value = item.id;
+
+    document.getElementById(
+        "changelog-title"
+    ).value = item.title || "";
+
+    document.getElementById(
+        "changelog-description"
+    ).value = item.description || "";
+
+    document
+        .getElementById("changelog-form")
+        .scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+}
+
+async function deleteChangelog(id) {
+    if (
+        !currentUser ||
+        currentUser.isMainAdmin !== true ||
+        !supabaseReady
+    ) {
+        alert(
+            "❌ Только главный администратор может удалять изменения"
+        );
+        return;
+    }
+
+    if (!confirm("Удалить это изменение?")) {
+        return;
+    }
+
+    const result =
+        await supabaseClient
+            .from("changelog")
+            .delete()
+            .eq("id", Number(id));
+
+    if (result.error) {
+        alert(
+            "❌ Не удалось удалить изменение: " +
+            result.error.message
+        );
+        return;
+    }
+
+    await loadChangelog();
+}
+
+function resetChangelogForm() {
+    const form =
+        document.getElementById(
+            "changelog-form"
+        );
+
+    if (form) {
+        form.reset();
+    }
+
+    document.getElementById(
+        "changelog-edit-id"
+    ).value = "";
+}
+
+function renderSocialLinks() {
+    const container =
+        document.getElementById(
+            "social-links-list"
+        );
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!socialLinks.length) {
+        container.innerHTML =
+            '<div class="social-empty">' +
+            "Социальные сети пока не добавлены." +
+            "</div>";
+
+        return;
+    }
+
+    socialLinks.forEach(function(item) {
+        const link =
+            document.createElement("a");
+
+        link.className =
+            "social-link-card";
+
+        link.href = item.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        link.style.setProperty(
+            "--social-color",
+            item.color || "#6366f1"
+        );
+
+        link.innerHTML =
+            '<span class="social-link-icon">' +
+            escapeHtml(item.icon || "🔗") +
+            "</span>" +
+
+            '<span class="social-link-content">' +
+            '<span class="social-link-title">' +
+            escapeHtml(item.title || "Соцсеть") +
+            "</span>" +
+
+            '<span class="social-link-url">' +
+            escapeHtml(item.url || "") +
+            "</span>" +
+            "</span>";
+
+        container.appendChild(link);
+    });
+}
+
+function renderAdminSocialLinks() {
+    const container =
+        document.getElementById(
+            "admin-social-list"
+        );
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!socialLinks.length) {
+        container.innerHTML =
+            '<div class="social-empty">' +
+            "Социальные сети пока не добавлены." +
+            "</div>";
+
+        return;
+    }
+
+    socialLinks.forEach(function(item) {
+        const row =
+            document.createElement("div");
+
+        row.className =
+            "admin-social-item";
+
+        row.style.setProperty(
+            "--social-color",
+            item.color || "#6366f1"
+        );
+
+        row.innerHTML =
+            '<div class="admin-social-info">' +
+            '<span class="admin-social-icon">' +
+            escapeHtml(item.icon || "🔗") +
+            "</span>" +
+
+            '<div class="admin-social-text">' +
+            '<div class="admin-social-title">' +
+            escapeHtml(item.title || "Соцсеть") +
+            "</div>" +
+
+            '<div class="admin-social-url">' +
+            escapeHtml(item.url || "") +
+            "</div>" +
+            "</div>" +
+            "</div>" +
+
+            '<div class="admin-social-actions">' +
+            '<button class="btn btn-secondary btn-sm" onclick="editSocialLink(' +
+            item.id +
+            ')">Изменить</button>' +
+
+            '<button class="btn btn-danger btn-sm" onclick="deleteSocialLink(' +
+            item.id +
+            ')">Удалить</button>' +
+            "</div>";
+
+        container.appendChild(row);
+    });
+}
+
+function renderSocialIconPicker() {
+    const container =
+        document.getElementById(
+            "social-icon-picker"
+        );
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    const selected =
+        document.getElementById(
+            "social-icon"
+        ).value || "🔗";
+
+    SOCIAL_ICONS.forEach(function(icon) {
+        const button =
+            document.createElement("button");
+
+        button.type = "button";
+        button.className =
+            "social-icon-option";
+
+        button.textContent = icon;
+        button.title = "Выбрать " + icon;
+
+        if (icon === selected) {
+            button.classList.add("selected");
+        }
+
+        button.addEventListener(
+            "click",
+            function() {
+                selectSocialIcon(icon);
+            }
+        );
+
+        container.appendChild(button);
+    });
+
+    updateSelectedSocialIcon();
+}
+
+function selectSocialIcon(icon) {
+    const input =
+        document.getElementById(
+            "social-icon"
+        );
+
+    if (input) {
+        input.value = icon;
+    }
+
+    document
+        .querySelectorAll(
+            ".social-icon-option"
+        )
+        .forEach(function(button) {
+            button.classList.toggle(
+                "selected",
+                button.textContent === icon
+            );
+        });
+
+    updateSelectedSocialIcon();
+}
+
+function updateSelectedSocialIcon() {
+    const input =
+        document.getElementById(
+            "social-icon"
+        );
+
+    const label =
+        document.getElementById(
+            "selected-social-icon"
+        );
+
+    if (input && label) {
+        label.textContent =
+            "Выбрано: " + (input.value || "🔗");
+    }
+}
+
+async function handleSocialSubmit(event) {
+    event.preventDefault();
+
+    if (
+        !currentUser ||
+        currentUser.isMainAdmin !== true ||
+        !supabaseReady
+    ) {
+        alert(
+            "❌ Только главный администратор может изменять соцсети"
+        );
+        return;
+    }
+
+    const title =
+        document.getElementById(
+            "social-title"
+        ).value.trim();
+
+    const url =
+        document.getElementById(
+            "social-url"
+        ).value.trim();
+
+    const icon =
+        document.getElementById(
+            "social-icon"
+        ).value || "🔗";
+
+    const color =
+        document.getElementById(
+            "social-color"
+        ).value || "#6366f1";
+
+    const editId =
+        document.getElementById(
+            "social-edit-id"
+        ).value;
+
+    if (!title || !url) {
+        alert(
+            "Заполните название и ссылку"
+        );
+        return;
+    }
+
+    let result;
+
+    if (editId) {
+        result = await supabaseClient
+            .from("social_links")
+            .update({
+                title: title,
+                url: url,
+                icon: icon,
+                color: color,
+                updated_at:
+                    new Date().toISOString()
+            })
+            .eq("id", Number(editId));
+    } else {
+        result = await supabaseClient
+            .from("social_links")
+            .insert({
+                title: title,
+                url: url,
+                icon: icon,
+                color: color,
+                sort_order: socialLinks.length
+            });
+    }
+
+    if (result.error) {
+        alert(
+            "❌ Не удалось сохранить соцсеть: " +
+            result.error.message
+        );
+        return;
+    }
+
+    resetSocialForm();
+    await loadSocialLinks();
+
+    const message =
+        document.getElementById(
+            "social-save-message"
+        );
+
+    if (message) {
+        message.textContent =
+            "✅ Соцсеть сохранена";
+
+        setTimeout(function() {
+            message.textContent = "";
+        }, 3000);
+    }
+}
+
+function editSocialLink(id) {
+    const item =
+        socialLinks.find(function(link) {
+            return Number(link.id) === Number(id);
+        });
+
+    if (!item) return;
+
+    document.getElementById(
+        "social-edit-id"
+    ).value = item.id;
+
+    document.getElementById(
+        "social-title"
+    ).value = item.title || "";
+
+    document.getElementById(
+        "social-url"
+    ).value = item.url || "";
+
+    document.getElementById(
+        "social-color"
+    ).value = item.color || "#6366f1";
+
+    selectSocialIcon(item.icon || "🔗");
+
+    document
+        .getElementById("social-form")
+        .scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+}
+
+async function deleteSocialLink(id) {
+    if (
+        !currentUser ||
+        currentUser.isMainAdmin !== true ||
+        !supabaseReady
+    ) {
+        alert(
+            "❌ Только главный администратор может удалять соцсети"
+        );
+        return;
+    }
+
+    if (!confirm("Удалить эту соцсеть?")) {
+        return;
+    }
+
+    const result =
+        await supabaseClient
+            .from("social_links")
+            .delete()
+            .eq("id", Number(id));
+
+    if (result.error) {
+        alert(
+            "❌ Не удалось удалить соцсеть: " +
+            result.error.message
+        );
+        return;
+    }
+
+    await loadSocialLinks();
+}
+
+function resetSocialForm() {
+    const form =
+        document.getElementById(
+            "social-form"
+        );
+
+    if (form) {
+        form.reset();
+    }
+
+    document.getElementById(
+        "social-edit-id"
+    ).value = "";
+
+    document.getElementById(
+        "social-icon"
+    ).value = "🔗";
+
+    document.getElementById(
+        "social-color"
+    ).value = "#6366f1";
+
+    selectSocialIcon("🔗");
+}
+
+function switchAdminTab(tabName) {
+    document
+        .querySelectorAll(".admin-tab-content")
+        .forEach(function(item) {
+            item.classList.remove("active");
+        });
+
+    document
+        .querySelectorAll(".admin-tab-btn")
+        .forEach(function(item) {
+            item.classList.remove("active");
+        });
+
+    const tab =
+        document.getElementById(
+            "admin-tab-" + tabName
+        );
+
+    if (tab) {
+        tab.classList.add("active");
+    }
+
+    document
+        .querySelectorAll(".admin-tab-btn")
+        .forEach(function(button) {
+            if (
+                button.getAttribute("onclick") ===
+                "switchAdminTab('" +
+                tabName +
+                "')"
+            ) {
+                button.classList.add("active");
+            }
+        });
+
+    if (tabName === "servers") {
+        renderServersList();
+    }
+
+    if (tabName === "settings") {
+        loadAdminSettings();
+    }
+
+    if (tabName === "users") {
+        renderUsersList();
+    }
+
+    if (tabName === "questions") {
+        renderAdminAllQuestions();
+    }
+
+    if (tabName === "changelog") {
+        renderAdminChangelog();
+    }
+
+    if (tabName === "socials") {
+        renderAdminSocialLinks();
+        renderSocialIconPicker();
+    }
+}
+
+function showNewQuestionModal() {
+    if (!currentUser) {
+        alert("⚠️ Войдите");
+        navigateTo("auth");
+        return;
+    }
+
+    document
+        .getElementById("new-question-modal")
+        .classList.add("show");
+}
+
+function closeModal() {
+    document
+        .getElementById("new-question-modal")
+        .classList.remove("show");
+}
+
+function openQuestionView(id) {
+    const item =
+        questions.find(function(question) {
+            return String(question.id) ===
+                String(id);
+        });
+
+    if (!item) return;
+
+    currentQuestionId = item.id;
+
+    document.getElementById(
+        "view-question-title"
+    ).textContent = item.title;
+
+    document.getElementById(
+        "view-question-author"
+    ).textContent = item.author;
+
+    document.getElementById(
+        "view-question-date"
+    ).textContent = item.date;
+
+    document.getElementById(
+        "view-question-category"
+    ).textContent =
+        getCategoryName(item.category);
+
+    document.getElementById(
+        "view-question-text"
+    ).textContent = item.text;
+
+    document
+        .getElementById(
+            "view-question-status-badge"
+        )
+        .classList.toggle(
+            "show",
+            item.isUrgent
+        );
+
+    const answers =
+        document.getElementById(
+            "view-question-answers"
+        );
+
+    answers.innerHTML = "";
+
+    if (
+        item.answers &&
+        item.answers.length
+    ) {
+        item.answers.forEach(function(answer) {
+            const node =
+                document.createElement("div");
+
+            node.className = "answer-item";
+
+            node.innerHTML =
+                '<div class="answer-meta">' +
+                escapeHtml(answer.by || "") +
+                "</div>" +
+                "<div>" +
+                escapeHtml(answer.text || "") +
+                "</div>";
+
+            answers.appendChild(node);
+        });
+    } else if (item.answer) {
+        const node =
+            document.createElement("div");
+
+        node.className = "answer-item";
+
+        node.innerHTML =
+            '<div class="answer-meta">' +
+            escapeHtml(
+                item.answerBy || "Админ"
+            ) +
+            "</div>" +
+            "<div>" +
+            escapeHtml(item.answer) +
+            "</div>";
+
+        answers.appendChild(node);
+    } else {
+        answers.innerHTML =
+            '<p class="no-answer">⏳ Ответов пока нет</p>';
+    }
+
+    const adminForm =
+        document.getElementById(
+            "admin-answer-form"
+        );
+
+    const playerSection =
+        document.getElementById(
+            "player-complete-section"
+        );
+
+    if (currentUser && currentUser.isAdmin) {
+        adminForm.style.display = "block";
+        playerSection.style.display = "none";
+    } else if (
+        currentUser &&
+        item.userId === currentUser.id &&
+        !item.closed
+    ) {
+        adminForm.style.display = "none";
+        playerSection.style.display = "block";
+    } else {
+        adminForm.style.display = "none";
+        playerSection.style.display = "none";
+    }
+
+    document
+        .getElementById("view-question-modal")
+        .classList.add("show");
+}
+
+function closeViewModal() {
+    document
+        .getElementById("view-question-modal")
+        .classList.remove("show");
+
+    renderQuestions();
+}
+
+function changePassword() {
+    alert(
+        "Функция смены пароля использует Supabase Auth."
+    );
+}
+
+function deleteAccount() {
+    alert(
+        "Удаление пользователя Auth необходимо выполнять через Edge Function."
+    );
+}
+
+function downloadBuild(url) {
+    if (url) {
+        window.open(
+            url,
+            "_blank",
+            "noopener"
+        );
+    }
+}
+
+function getCategoryName(category) {
+    const map = {
+        technical: "🔧",
+        gameplay: "🎮",
+        donation: "💎",
+        other: "❓",
+        password: "🔑"
+    };
+
+    return map[category] || category;
+}
+
+function getStatusIcon(status) {
+    if (status === "maintenance") return "🟠";
+    if (status === "offline") return "🔴";
+    return "🟢";
+}
+
+function getStatusName(status) {
+    if (status === "maintenance") {
+        return "Обслуживание";
+    }
+
+    if (status === "offline") {
+        return "Оффлайн";
+    }
+
+    return "Онлайн";
+}
+
+function copyIP(ip) {
+    if (!ip) return;
+
+    const done = function() {
+        const message =
+            document.getElementById(
+                "ip-copy-msg"
+            );
+
+        if (!message) return;
+
+        message.textContent =
+            "✅ IP скопирован: " + ip;
+
+        setTimeout(function() {
+            message.textContent = "";
+        }, 4000);
+    };
+
+    if (
+        navigator.clipboard &&
+        window.isSecureContext
+    ) {
+        navigator.clipboard
+            .writeText(ip)
+            .then(done)
+            .catch(function() {
+                fallbackCopy(ip, done);
+            });
+    } else {
+        fallbackCopy(ip, done);
+    }
+}
+
+function fallbackCopy(text, callback) {
+    const textarea =
+        document.createElement("textarea");
+
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    try {
+        document.execCommand("copy");
+    } catch (error) {
+        console.warn(error);
+    }
+
+    document.body.removeChild(textarea);
+    callback();
+}
+
+function createServerId(name) {
+    return String(name || "server")
+        .toLowerCase()
+        .replace(/[^a-zа-я0-9]+/gi, "-")
+        .replace(/^-+|-+$/g, "");
+}
+
+function openAssignModal(username) {
     document.getElementById(
         "assign-username"
     ).value = username;
@@ -2217,13 +3422,6 @@ function closePromoteModal() {
 }
 
 function showAddServerModal() {
-    if (!currentUser || !currentUser.isMainAdmin) {
-        alert(
-            "❌ Только главный администратор может добавлять серверы"
-        );
-        return;
-    }
-
     document
         .getElementById("add-server-modal")
         .classList.add("show");
@@ -2233,649 +3431,6 @@ function closeAddServerModal() {
     document
         .getElementById("add-server-modal")
         .classList.remove("show");
-}
-
-function renderQuestions() {
-    const list =
-        document.getElementById(
-            "questions-list"
-        );
-
-    const adminList =
-        document.getElementById(
-            "admin-questions-list"
-        );
-
-    if (!list || !adminList) return;
-
-    const mine =
-        currentUser
-            ? questions.filter(function(item) {
-                return (
-                    item.userId === currentUser.id ||
-                    item.author === currentUser.username
-                );
-            })
-            : [];
-
-    const all =
-        questions.slice();
-
-    list.innerHTML =
-        mine.length
-            ? ""
-            : '<div class="question-item placeholder">📭</div>';
-
-    adminList.innerHTML =
-        all.length
-            ? ""
-            : '<div class="question-item placeholder">📥</div>';
-
-    mine
-        .filter(function(item) {
-            return !item.closed;
-        })
-        .forEach(function(item) {
-            list.appendChild(
-                createQuestionCard(item)
-            );
-        });
-
-    if (currentUser && currentUser.isAdmin) {
-        all
-            .filter(function(item) {
-                return !item.closed;
-            })
-            .forEach(function(item) {
-                adminList.appendChild(
-                    createQuestionCard(item)
-                );
-            });
-    }
-}
-
-function renderAdminAllQuestions() {
-    const container =
-        document.getElementById(
-            "admin-all-questions"
-        );
-
-    if (!container) return;
-
-    container.innerHTML = "";
-
-    questions.forEach(function(question) {
-        container.appendChild(
-            createQuestionCard(question)
-        );
-    });
-}
-
-function createQuestionCard(question) {
-    const card =
-        document.createElement("div");
-
-    card.className =
-        "question-item";
-
-    if (question.isUrgent) {
-        card.classList.add("urgent");
-    }
-
-    if (question.closed) {
-        card.classList.add("closed");
-    }
-
-    const answered =
-        Boolean(question.answer) ||
-        (
-            question.answers &&
-            question.answers.length > 0
-        );
-
-    const statusClass =
-        question.closed
-            ? "status-closed"
-            : answered
-                ? "status-answered"
-                : "status-open";
-
-    const statusText =
-        question.closed
-            ? "✅"
-            : answered
-                ? "💬"
-                : "⏳";
-
-    card.innerHTML =
-        '<div class="question-row">' +
-        '<div class="question-title">' +
-        escapeHtml(question.title) +
-        "</div>" +
-        '<span class="status ' +
-        statusClass +
-        '">' +
-        statusText +
-        "</span>" +
-        "</div>" +
-
-        '<div class="question-details">' +
-        escapeHtml(question.author) +
-        " • " +
-        escapeHtml(question.date) +
-        "</div>";
-
-    card.addEventListener(
-        "click",
-        function() {
-            openQuestionView(question.id);
-        }
-    );
-
-    return card;
-}
-
-function showNewQuestionModal() {
-    if (!currentUser) {
-        alert("⚠️ Войдите");
-        navigateTo("auth");
-        return;
-    }
-
-    document
-        .getElementById("new-question-modal")
-        .classList.add("show");
-}
-
-function closeModal() {
-    document
-        .getElementById("new-question-modal")
-        .classList.remove("show");
-}
-
-async function handleQuestionSubmit(event) {
-    event.preventDefault();
-
-    if (!currentUser || !supabaseReady) return;
-
-    const title =
-        document.getElementById(
-            "question-title"
-        ).value.trim();
-
-    const category =
-        document.getElementById(
-            "question-category"
-        ).value;
-
-    const description =
-        document.getElementById(
-            "question-text"
-        ).value.trim();
-
-    const result =
-        await supabaseClient
-            .from("questions")
-            .insert({
-                user_id: currentUser.id,
-                username: currentUser.username,
-                title: title,
-                category: category,
-                description: description,
-                date: new Date().toLocaleString(
-                    "ru-RU"
-                ),
-                answers: [],
-                is_urgent: category === "password",
-                closed: false
-            });
-
-    if (result.error) {
-        alert(
-            "❌ Не удалось отправить вопрос: " +
-            result.error.message
-        );
-        return;
-    }
-
-    closeModal();
-    event.target.reset();
-    await loadQuestions();
-    renderQuestions();
-}
-
-function openQuestionView(id) {
-    const question =
-        questions.find(function(item) {
-            return String(item.id) === String(id);
-        });
-
-    if (!question) return;
-
-    currentQuestionId = question.id;
-
-    document.getElementById(
-        "view-question-title"
-    ).textContent = question.title;
-
-    document.getElementById(
-        "view-question-author"
-    ).textContent = question.author;
-
-    document.getElementById(
-        "view-question-date"
-    ).textContent = question.date;
-
-    document.getElementById(
-        "view-question-category"
-    ).textContent =
-        getCategoryName(question.category);
-
-    document.getElementById(
-        "view-question-text"
-    ).textContent = question.text;
-
-    const status =
-        document.getElementById(
-            "view-question-status-badge"
-        );
-
-    status.classList.toggle(
-        "show",
-        question.isUrgent
-    );
-
-    const answers =
-        document.getElementById(
-            "view-question-answers"
-        );
-
-    answers.innerHTML = "";
-
-    if (
-        question.answers &&
-        question.answers.length
-    ) {
-        question.answers.forEach(function(item) {
-            const answer =
-                document.createElement("div");
-
-            answer.className =
-                "answer-item";
-
-            answer.innerHTML =
-                '<div class="answer-meta">' +
-                escapeHtml(item.by || "") +
-                "</div>" +
-                "<div>" +
-                escapeHtml(item.text || "") +
-                "</div>";
-
-            answers.appendChild(answer);
-        });
-    } else if (question.answer) {
-        const answer =
-            document.createElement("div");
-
-        answer.className =
-            "answer-item";
-
-        answer.innerHTML =
-            '<div class="answer-meta">' +
-            escapeHtml(
-                question.answerBy || "Админ"
-            ) +
-            "</div>" +
-            "<div>" +
-            escapeHtml(question.answer) +
-            "</div>";
-
-        answers.appendChild(answer);
-    } else {
-        answers.innerHTML =
-            '<p class="no-answer">⏳ Ответов пока нет</p>';
-    }
-
-    const adminForm =
-        document.getElementById(
-            "admin-answer-form"
-        );
-
-    const playerSection =
-        document.getElementById(
-            "player-complete-section"
-        );
-
-    if (currentUser && currentUser.isAdmin) {
-        adminForm.style.display = "block";
-        playerSection.style.display = "none";
-    } else if (
-        currentUser &&
-        question.userId === currentUser.id &&
-        !question.closed
-    ) {
-        adminForm.style.display = "none";
-        playerSection.style.display = "block";
-    } else {
-        adminForm.style.display = "none";
-        playerSection.style.display = "none";
-    }
-
-    document
-        .getElementById("view-question-modal")
-        .classList.add("show");
-}
-
-function closeViewModal() {
-    document
-        .getElementById("view-question-modal")
-        .classList.remove("show");
-
-    renderQuestions();
-}
-
-async function submitAnswer() {
-    if (
-        !currentUser ||
-        !currentUser.isAdmin ||
-        !supabaseReady
-    ) {
-        return;
-    }
-
-    const text =
-        document.getElementById(
-            "answer-text"
-        ).value.trim();
-
-    const question =
-        questions.find(function(item) {
-            return String(item.id) ===
-                String(currentQuestionId);
-        });
-
-    if (!question || !text) return;
-
-    const answers =
-        Array.isArray(question.answers)
-            ? question.answers.slice()
-            : [];
-
-    answers.push({
-        text: text,
-        by: currentUser.username,
-        date: new Date().toLocaleString(
-            "ru-RU"
-        )
-    });
-
-    const result =
-        await supabaseClient
-            .from("questions")
-            .update({
-                answers: answers,
-                answer: text,
-                answer_by: currentUser.username
-            })
-            .eq("id", question.id);
-
-    if (result.error) {
-        alert(
-            "❌ Не удалось отправить ответ: " +
-            result.error.message
-        );
-        return;
-    }
-
-    document.getElementById(
-        "answer-text"
-    ).value = "";
-
-    await loadQuestions();
-    openQuestionView(currentQuestionId);
-}
-
-async function completeQuestion() {
-    if (
-        !currentUser ||
-        !currentUser.isAdmin ||
-        !supabaseReady
-    ) {
-        return;
-    }
-
-    const result =
-        await supabaseClient
-            .from("questions")
-            .update({
-                closed: true
-            })
-            .eq("id", currentQuestionId);
-
-    if (result.error) {
-        alert(
-            "❌ Не удалось закрыть вопрос: " +
-            result.error.message
-        );
-        return;
-    }
-
-    await loadQuestions();
-    closeViewModal();
-}
-
-async function playerCompleteQuestion() {
-    if (
-        !currentUser ||
-        !supabaseReady
-    ) {
-        return;
-    }
-
-    const question =
-        questions.find(function(item) {
-            return String(item.id) ===
-                String(currentQuestionId);
-        });
-
-    if (
-        !question ||
-        question.userId !== currentUser.id
-    ) {
-        return;
-    }
-
-    const result =
-        await supabaseClient
-            .from("questions")
-            .update({
-                closed: true
-            })
-            .eq("id", question.id);
-
-    if (result.error) {
-        alert(
-            "❌ Не удалось закрыть вопрос: " +
-            result.error.message
-        );
-        return;
-    }
-
-    await loadQuestions();
-    closeViewModal();
-}
-
-function showForgotPassword() {
-    document.getElementById(
-        "login-card"
-    ).style.display = "none";
-
-    document.getElementById(
-        "register-card"
-    ).style.display = "none";
-
-    document.getElementById(
-        "forgot-card"
-    ).style.display = "block";
-}
-
-function showRegister() {
-    document.getElementById(
-        "login-card"
-    ).style.display = "none";
-
-    document.getElementById(
-        "forgot-card"
-    ).style.display = "none";
-
-    document.getElementById(
-        "register-card"
-    ).style.display = "block";
-}
-
-function showLogin() {
-    document.getElementById(
-        "register-card"
-    ).style.display = "none";
-
-    document.getElementById(
-        "forgot-card"
-    ).style.display = "none";
-
-    document.getElementById(
-        "login-card"
-    ).style.display = "block";
-}
-
-async function changePassword() {
-    if (!currentUser || !supabaseReady) return;
-
-    const password =
-        prompt("Введите новый пароль:");
-
-    if (!password || password.length < 4) {
-        alert(
-            "Пароль должен содержать минимум 4 символа"
-        );
-        return;
-    }
-
-    const result =
-        await supabaseClient.auth.updateUser({
-            password: password
-        });
-
-    if (result.error) {
-        alert(
-            "❌ " + result.error.message
-        );
-        return;
-    }
-
-    alert("✅ Пароль изменён");
-}
-
-async function deleteAccount() {
-    alert(
-        "ℹ️ Удаление Auth-пользователя нужно выполнять через Edge Function. Используйте кнопку «Выйти»."
-    );
-}
-
-function downloadBuild(url) {
-    if (url) {
-        window.open(
-            url,
-            "_blank",
-            "noopener"
-        );
-    }
-}
-
-function getCategoryName(category) {
-    const map = {
-        technical: "🔧",
-        gameplay: "🎮",
-        donation: "💎",
-        other: "❓",
-        password: "🔑"
-    };
-
-    return map[category] || category;
-}
-
-function getStatusIcon(status) {
-    if (status === "maintenance") return "🟠";
-    if (status === "offline") return "🔴";
-    return "🟢";
-}
-
-function getStatusName(status) {
-    if (status === "maintenance") {
-        return "Обслуживание";
-    }
-
-    if (status === "offline") {
-        return "Оффлайн";
-    }
-
-    return "Онлайн";
-}
-
-function copyIP(ip) {
-    if (!ip) return;
-
-    const done =
-        function() {
-            const message =
-                document.getElementById(
-                    "ip-copy-msg"
-                );
-
-            if (!message) return;
-
-            message.textContent =
-                "✅ IP скопирован: " + ip;
-
-            setTimeout(function() {
-                message.textContent = "";
-            }, 4000);
-        };
-
-    if (
-        navigator.clipboard &&
-        window.isSecureContext
-    ) {
-        navigator.clipboard
-            .writeText(ip)
-            .then(done)
-            .catch(function() {
-                fallbackCopy(ip, done);
-            });
-    } else {
-        fallbackCopy(ip, done);
-    }
-}
-
-function fallbackCopy(text, callback) {
-    const textarea =
-        document.createElement("textarea");
-
-    textarea.value = text;
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-
-    try {
-        document.execCommand("copy");
-    } catch (error) {
-        console.warn(error);
-    }
-
-    document.body.removeChild(textarea);
-    callback();
 }
 
 function addNewIpField() {
@@ -2933,143 +3488,16 @@ function removeBuild(index) {
     renderAdminBuilds();
 }
 
-function switchToServer(index) {
-    loadServer(index);
-    loadAdminSettings();
-    renderServersList();
-}
+function getCategoryName(category) {
+    const map = {
+        technical: "🔧",
+        gameplay: "🎮",
+        donation: "💎",
+        other: "❓",
+        password: "🔑"
+    };
 
-function switchAdminTab(tabName) {
-    document
-        .querySelectorAll(".admin-tab-content")
-        .forEach(function(item) {
-            item.classList.remove("active");
-        });
-
-    document
-        .querySelectorAll(".admin-tab-btn")
-        .forEach(function(item) {
-            item.classList.remove("active");
-        });
-
-    const content =
-        document.getElementById(
-            "admin-tab-" + tabName
-        );
-
-    if (content) {
-        content.classList.add("active");
-    }
-
-    document
-        .querySelectorAll(".admin-tab-btn")
-        .forEach(function(button) {
-            if (
-                button.getAttribute("onclick") ===
-                "switchAdminTab('" +
-                tabName +
-                "')"
-            ) {
-                button.classList.add("active");
-            }
-        });
-
-    if (tabName === "servers") {
-        renderServersList();
-    }
-
-    if (tabName === "settings") {
-        loadAdminSettings();
-    }
-
-    if (tabName === "users") {
-        renderUsersList();
-    }
-
-    if (tabName === "questions") {
-        renderAdminAllQuestions();
-    }
-}
-
-function showAddServerModal() {
-    if (
-        !currentUser ||
-        !currentUser.isMainAdmin
-    ) {
-        alert(
-            "❌ Только главный администратор может добавлять серверы"
-        );
-        return;
-    }
-
-    document
-        .getElementById("add-server-modal")
-        .classList.add("show");
-}
-
-function closeAddServerModal() {
-    document
-        .getElementById("add-server-modal")
-        .classList.remove("show");
-}
-
-function openAssignModal(username) {
-    if (
-        !currentUser ||
-        !currentUser.isMainAdmin
-    ) {
-        alert(
-            "❌ Только главный администратор может назначать роли"
-        );
-        return;
-    }
-
-    document.getElementById(
-        "assign-username"
-    ).value = username;
-
-    const select =
-        document.getElementById(
-            "assign-server"
-        );
-
-    select.innerHTML = "";
-
-    servers.forEach(function(server, index) {
-        const option =
-            document.createElement("option");
-
-        option.value = index;
-        option.textContent = server.name;
-
-        select.appendChild(option);
-    });
-
-    document
-        .getElementById("assign-role-modal")
-        .classList.add("show");
-}
-
-function closeAssignModal() {
-    document
-        .getElementById("assign-role-modal")
-        .classList.remove("show");
-}
-
-function openPromoteModal(username) {
-    document.getElementById(
-        "promote-username"
-    ).value = username;
-
-    document
-        .getElementById("promote-modal")
-        .classList.add("show");
-}
-
-function closePromoteModal() {
-    document
-        .getElementById("promote-modal")
-        .classList.remove("show");
+    return map[category] || category;
 }
 
 function escapeJs(value) {
@@ -3109,5 +3537,12 @@ Object.assign(window, {
     deleteAccount,
     logout,
     copyIP,
-    downloadBuild
+    downloadBuild,
+    editChangelog,
+    deleteChangelog,
+    resetChangelogForm,
+    selectSocialIcon,
+    editSocialLink,
+    deleteSocialLink,
+    resetSocialForm
 });
