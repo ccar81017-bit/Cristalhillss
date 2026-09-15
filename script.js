@@ -885,7 +885,16 @@ function setupForms() {
 async function handleLogin(event) {
     event.preventDefault();
 
-    if (!supabaseReady) return;
+    const errorElement =
+        document.getElementById("login-error");
+
+    errorElement.textContent = "";
+
+    if (!supabaseReady || !supabaseClient) {
+        errorElement.textContent =
+            "❌ Supabase ещё не загрузился";
+        return;
+    }
 
     const username =
         document
@@ -894,52 +903,120 @@ async function handleLogin(event) {
             .trim();
 
     const password =
-        document.getElementById("login-password")
+        document
+            .getElementById("login-password")
             .value;
 
-    const error =
-        document.getElementById("login-error");
+    if (!username || !password) {
+        errorElement.textContent =
+            "❌ Заполните все поля";
+        return;
+    }
 
-    error.textContent = "";
+    try {
+        const lookup =
+            await supabaseClient.rpc(
+                "get_email_by_username",
+                {
+                    p_username: username
+                }
+            );
 
-    const lookup =
-        await supabaseClient.rpc(
-            "get_email_by_username",
-            {
-                p_username: username
+        if (lookup.error) {
+            console.error(
+                "Ошибка поиска email:",
+                lookup.error
+            );
+
+            errorElement.textContent =
+                "❌ Ошибка базы данных: " +
+                lookup.error.message;
+
+            return;
+        }
+
+        if (!lookup.data) {
+            errorElement.textContent =
+                "❌ Пользователь не найден";
+            return;
+        }
+
+        const result =
+            await supabaseClient.auth
+                .signInWithPassword({
+                    email: lookup.data,
+                    password: password
+                });
+
+        if (result.error) {
+            console.error(
+                "Ошибка входа:",
+                result.error
+            );
+
+            if (
+                /email not confirmed/i.test(
+                    result.error.message || ""
+                )
+            ) {
+                errorElement.textContent =
+                    "❌ Подтвердите email";
+            } else {
+                errorElement.textContent =
+                    "❌ Неверный логин или пароль";
             }
+
+            return;
+        }
+
+        await loadProfile(result.data.user);
+
+        if (currentUser) {
+            await supabaseClient
+                .from("profiles")
+                .update({
+                    last_login:
+                        new Date().toISOString()
+                })
+                .eq("id", currentUser.id);
+        }
+
+        updateUI();
+        updateProfile();
+        renderUsersList();
+
+        event.target.reset();
+        navigateTo("profile");
+    } catch (error) {
+        console.error(
+            "Критическая ошибка входа:",
+            error
         );
 
-    if (lookup.error || !lookup.data) {
-        error.textContent =
-            "❌ Пользователь не найден";
-        return;
+        errorElement.textContent =
+            "❌ Ошибка подключения к серверу";
     }
-
-    const result =
-        await supabaseClient.auth.signInWithPassword({
-            email: lookup.data,
-            password: password
-        });
-
-    if (result.error) {
-        error.textContent =
-            "❌ Неверный логин или пароль";
-        return;
-    }
-
-    await loadProfile(result.data.user);
-
-    updateUI();
-    updateProfile();
-    navigateTo("profile");
-    event.target.reset();
 }
 
 async function handleRegister(event) {
     event.preventDefault();
 
-    if (!supabaseReady) return;
+    const errorElement =
+        document.getElementById("register-error");
+
+    const successElement =
+        document.getElementById(
+            "register-success"
+        );
+
+    errorElement.textContent = "";
+    successElement.textContent = "";
+
+    if (!supabaseReady || !supabaseClient) {
+        errorElement.textContent =
+            "❌ Supabase ещё не загрузился";
+        return;
+    }
 
     const username =
         document
@@ -955,93 +1032,125 @@ async function handleRegister(event) {
             .toLowerCase();
 
     const password =
-        document.getElementById("register-password")
+        document
+            .getElementById("register-password")
             .value;
 
     const confirmation =
-        document.getElementById("register-confirm")
+        document
+            .getElementById("register-confirm")
             .value;
 
-    const error =
-        document.getElementById("register-error");
-
-    const success =
-        document.getElementById("register-success");
-
-    error.textContent = "";
-    success.textContent = "";
-
     if (username.length < 3) {
-        error.textContent =
+        errorElement.textContent =
             "❌ Ник должен содержать минимум 3 символа";
         return;
     }
 
     if (password !== confirmation) {
-        error.textContent =
+        errorElement.textContent =
             "❌ Пароли не совпадают";
         return;
     }
 
     if (password.length < 4) {
-        error.textContent =
+        errorElement.textContent =
             "❌ Минимум 4 символа";
         return;
     }
 
-    const existing =
-        await supabaseClient.rpc(
-            "get_email_by_username",
-            {
-                p_username: username
-            }
+    try {
+        const existing =
+            await supabaseClient.rpc(
+                "get_email_by_username",
+                {
+                    p_username: username
+                }
+            );
+
+        if (existing.error) {
+            errorElement.textContent =
+                "❌ Не удалось проверить ник";
+            return;
+        }
+
+        if (existing.data) {
+            errorElement.textContent =
+                "❌ Такой ник уже занят";
+            return;
+        }
+
+        const result =
+            await supabaseClient.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    data: {
+                        username: username
+                    }
+                }
+            });
+
+        if (result.error) {
+            console.error(
+                "Ошибка регистрации:",
+                result.error
+            );
+
+            errorElement.textContent =
+                "❌ " + result.error.message;
+
+            return;
+        }
+
+        event.target.reset();
+
+        if (result.data.session) {
+            await loadProfile(result.data.user);
+
+            successElement.textContent =
+                "✅ Аккаунт создан";
+
+            updateUI();
+            updateProfile();
+
+            setTimeout(function() {
+                navigateTo("profile");
+            }, 700);
+        } else {
+            successElement.textContent =
+                "✅ Подтвердите email и войдите";
+        }
+    } catch (error) {
+        console.error(
+            "Критическая ошибка регистрации:",
+            error
         );
 
-    if (existing.data) {
-        error.textContent = "❌ Ник занят";
-        return;
-    }
-
-    const result =
-        await supabaseClient.auth.signUp({
-            email: email,
-            password: password,
-            options: {
-                data: {
-                    username: username
-                }
-            }
-        });
-
-    if (result.error) {
-        error.textContent =
-            "❌ " + result.error.message;
-        return;
-    }
-
-    event.target.reset();
-
-    if (result.data.session) {
-        await loadProfile(result.data.user);
-        success.textContent =
-            "✅ Аккаунт создан";
-
-        updateUI();
-        updateProfile();
-
-        setTimeout(function() {
-            navigateTo("profile");
-        }, 500);
-    } else {
-        success.textContent =
-            "✅ Проверьте email для подтверждения";
+        errorElement.textContent =
+            "❌ Ошибка подключения к серверу";
     }
 }
 
 async function handleForgotPassword(event) {
     event.preventDefault();
 
-    if (!supabaseReady) return;
+    const errorElement =
+        document.getElementById("forgot-error");
+
+    const successElement =
+        document.getElementById(
+            "forgot-success"
+        );
+
+    errorElement.textContent = "";
+    successElement.textContent = "";
+
+    if (!supabaseReady || !supabaseClient) {
+        errorElement.textContent =
+            "❌ Supabase ещё не загрузился";
+        return;
+    }
 
     const username =
         document
@@ -1056,50 +1165,63 @@ async function handleForgotPassword(event) {
             .trim()
             .toLowerCase();
 
-    const error =
-        document.getElementById("forgot-error");
-
-    const success =
-        document.getElementById("forgot-success");
-
-    const lookup =
-        await supabaseClient.rpc(
-            "get_email_by_username",
-            {
-                p_username: username
-            }
-        );
-
-    if (
-        lookup.error ||
-        !lookup.data ||
-        lookup.data.toLowerCase() !== email
-    ) {
-        error.textContent =
-            "❌ Ник и email не совпадают";
+    if (!username || !email) {
+        errorElement.textContent =
+            "❌ Заполните все поля";
         return;
     }
 
-    const result =
-        await supabaseClient.auth.resetPasswordForEmail(
-            email,
-            {
-                redirectTo:
-                    window.location.origin +
-                    window.location.pathname
-            }
+    try {
+        const lookup =
+            await supabaseClient.rpc(
+                "get_email_by_username",
+                {
+                    p_username: username
+                }
+            );
+
+        if (
+            lookup.error ||
+            !lookup.data ||
+            lookup.data.toLowerCase() !== email
+        ) {
+            errorElement.textContent =
+                "❌ Ник и email не совпадают";
+            return;
+        }
+
+        const redirectUrl =
+            window.location.origin +
+            window.location.pathname;
+
+        const result =
+            await supabaseClient.auth
+                .resetPasswordForEmail(
+                    email,
+                    {
+                        redirectTo: redirectUrl
+                    }
+                );
+
+        if (result.error) {
+            errorElement.textContent =
+                "❌ " + result.error.message;
+            return;
+        }
+
+        successElement.textContent =
+            "✅ Ссылка отправлена на email";
+
+        event.target.reset();
+    } catch (error) {
+        console.error(
+            "Ошибка восстановления:",
+            error
         );
 
-    if (result.error) {
-        error.textContent =
-            "❌ " + result.error.message;
-        return;
+        errorElement.textContent =
+            "❌ Ошибка подключения к серверу";
     }
-
-    success.textContent =
-        "✅ Ссылка отправлена на email";
-
-    event.target.reset();
 }
 
 async function handlePromote(event) {
@@ -3546,3 +3668,37 @@ Object.assign(window, {
     deleteSocialLink,
     resetSocialForm
 });
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+        const loginForm =
+            document.getElementById("login-form");
+
+        const registerForm =
+            document.getElementById("register-form");
+
+        const forgotForm =
+            document.getElementById("forgot-form");
+
+        if (loginForm) {
+            loginForm.addEventListener(
+                "submit",
+                handleLogin
+            );
+        }
+
+        if (registerForm) {
+            registerForm.addEventListener(
+                "submit",
+                handleRegister
+            );
+        }
+
+        if (forgotForm) {
+            forgotForm.addEventListener(
+                "submit",
+                handleForgotPassword
+            );
+        }
+    }
+);
