@@ -553,53 +553,36 @@ async function refreshAll() {
 
 document.addEventListener(
     "DOMContentLoaded",
-    async function() {
-        setupNavigation();
-        setupForms();
-        setupBrandButton();
+    function() {
+        const loginForm =
+            document.getElementById("login-form");
 
-        const ready = await initSupabase();
+        const registerForm =
+            document.getElementById("register-form");
 
-        if (!ready) {
-            servers = [cloneDefaultServer()];
-            updateUI();
-            updateProfile();
-            loadServer(0);
-            renderServersPage();
-            return;
+        const forgotForm =
+            document.getElementById("forgot-form");
+
+        if (loginForm) {
+            loginForm.addEventListener(
+                "submit",
+                handleLogin
+            );
         }
 
-        supabaseClient.auth.onAuthStateChange(
-            async function(event, session) {
-                if (
-                    event === "INITIAL_SESSION" ||
-                    event === "SIGNED_IN" ||
-                    event === "SIGNED_OUT" ||
-                    event === "USER_UPDATED"
-                ) {
-                    if (session && session.user) {
-                        await loadProfile(session.user);
-                    } else {
-                        currentUser = null;
-                    }
+        if (registerForm) {
+            registerForm.addEventListener(
+                "submit",
+                handleRegister
+            );
+        }
 
-                    await loadServers();
-                    await loadQuestions();
-                    await loadUsers();
-                    await loadChangelog();
-                    await loadSocialLinks();
-
-                    updateUI();
-                    updateProfile();
-                    renderQuestions();
-                    renderServersPage();
-                    renderServersList();
-                }
-            }
-        );
-
-        await refreshAll();
-        setupRealtime();
+        if (forgotForm) {
+            forgotForm.addEventListener(
+                "submit",
+                handleForgotPassword
+            );
+        }
     }
 );
 
@@ -881,6 +864,18 @@ function setupForms() {
         }
     });
 }
+
+    forms.forEach(function(item) {
+        const form =
+            document.getElementById(item[0]);
+
+        if (form) {
+            form.addEventListener(
+                "submit",
+                item[1]
+            );
+        }
+    });
 
 async function handleLogin(event) {
     event.preventDefault();
@@ -3668,37 +3663,3 @@ Object.assign(window, {
     deleteSocialLink,
     resetSocialForm
 });
-document.addEventListener(
-    "DOMContentLoaded",
-    function() {
-        const loginForm =
-            document.getElementById("login-form");
-
-        const registerForm =
-            document.getElementById("register-form");
-
-        const forgotForm =
-            document.getElementById("forgot-form");
-
-        if (loginForm) {
-            loginForm.addEventListener(
-                "submit",
-                handleLogin
-            );
-        }
-
-        if (registerForm) {
-            registerForm.addEventListener(
-                "submit",
-                handleRegister
-            );
-        }
-
-        if (forgotForm) {
-            forgotForm.addEventListener(
-                "submit",
-                handleForgotPassword
-            );
-        }
-    }
-);
