@@ -115,8 +115,6 @@ const DEFAULT_SERVER = {
     ]
 };
 
-/* -------------------- Вспомогательные функции -------------------- */
-
 function clone(value) {
     return JSON.parse(JSON.stringify(value));
 }
@@ -157,38 +155,6 @@ function createServerId(name) {
         .replace(/[^a-zа-я0-9]+/gi, "-")
         .replace(/^-+|-+$/g, "");
 }
-
-function getCategoryName(category) {
-    const map = {
-        technical: "🔧",
-        gameplay: "🎮",
-        donation: "💎",
-        other: "❓",
-        password: "🔑"
-    };
-
-    return map[category] || category;
-}
-
-function getStatusIcon(status) {
-    if (status === "maintenance") return "🟠";
-    if (status === "offline") return "🔴";
-    return "🟢";
-}
-
-function getStatusName(status) {
-    if (status === "maintenance") {
-        return "Обслуживание";
-    }
-
-    if (status === "offline") {
-        return "Оффлайн";
-    }
-
-    return "Онлайн";
-}
-
-/* -------------------- Нормализация данных -------------------- */
 
 function normalizeServer(row) {
     const fallback = cloneDefaultServer();
@@ -282,8 +248,6 @@ function profileToUser(profile) {
     };
 }
 
-/* -------------------- Инициализация Supabase -------------------- */
-
 async function initSupabase() {
     if (
         !window.supabase ||
@@ -305,8 +269,6 @@ async function initSupabase() {
     supabaseReady = true;
     return true;
 }
-
-/* -------------------- Загрузка данных -------------------- */
 
 async function loadProfile(authUser) {
     if (!authUser || !supabaseClient) {
@@ -589,49 +551,40 @@ async function refreshAll() {
     renderUsersList();
 }
 
-/* -------------------- Запуск сайта -------------------- */
-
 document.addEventListener(
     "DOMContentLoaded",
-    async function() {
-        try {
-            setupNavigation();
-            setupForms();
-            setupBrandButton();
+    function() {
+        const loginForm =
+            document.getElementById("login-form");
 
-            const ready =
-                await initSupabase();
+        const registerForm =
+            document.getElementById("register-form");
 
-            if (!ready) {
-                console.error(
-                    "Supabase не инициализирован"
-                );
+        const forgotForm =
+            document.getElementById("forgot-form");
 
-                servers = [
-                    cloneDefaultServer()
-                ];
+        if (loginForm) {
+            loginForm.addEventListener(
+                "submit",
+                handleLogin
+            );
+        }
 
-                updateUI();
-                updateProfile();
-                loadServer(0);
-                renderServersPage();
-                renderServersList();
+        if (registerForm) {
+            registerForm.addEventListener(
+                "submit",
+                handleRegister
+            );
+        }
 
-                return;
-            }
-
-            await refreshAll();
-            setupRealtime();
-        } catch (error) {
-            console.error(
-                "Ошибка запуска сайта:",
-                error
+        if (forgotForm) {
+            forgotForm.addEventListener(
+                "submit",
+                handleForgotPassword
             );
         }
     }
 );
-
-/* -------------------- Realtime -------------------- */
 
 function setupRealtime() {
     if (!supabaseClient) return;
@@ -727,8 +680,6 @@ function setupRealtime() {
         );
     }
 }
-
-/* -------------------- Навигация -------------------- */
 
 function setupBrandButton() {
     const brand =
@@ -888,8 +839,6 @@ function navigateTo(page) {
     });
 }
 
-/* -------------------- Формы -------------------- */
-
 function setupForms() {
     const forms = [
         ["login-form", handleLogin],
@@ -916,7 +865,17 @@ function setupForms() {
     });
 }
 
-/* -------------------- Авторизация -------------------- */
+    forms.forEach(function(item) {
+        const form =
+            document.getElementById(item[0]);
+
+        if (form) {
+            form.addEventListener(
+                "submit",
+                item[1]
+            );
+        }
+    });
 
 async function handleLogin(event) {
     event.preventDefault();
@@ -959,9 +918,15 @@ async function handleLogin(event) {
             );
 
         if (lookup.error) {
+            console.error(
+                "Ошибка поиска email:",
+                lookup.error
+            );
+
             errorElement.textContent =
                 "❌ Ошибка базы данных: " +
                 lookup.error.message;
+
             return;
         }
 
@@ -979,6 +944,11 @@ async function handleLogin(event) {
                 });
 
         if (result.error) {
+            console.error(
+                "Ошибка входа:",
+                result.error
+            );
+
             if (
                 /email not confirmed/i.test(
                     result.error.message || ""
@@ -1013,7 +983,10 @@ async function handleLogin(event) {
         event.target.reset();
         navigateTo("profile");
     } catch (error) {
-        console.error(error);
+        console.error(
+            "Критическая ошибка входа:",
+            error
+        );
 
         errorElement.textContent =
             "❌ Ошибка подключения к серверу";
@@ -1098,7 +1071,7 @@ async function handleRegister(event) {
 
         if (existing.data) {
             errorElement.textContent =
-                "❌ Такой ник занят";
+                "❌ Такой ник уже занят";
             return;
         }
 
@@ -1114,8 +1087,14 @@ async function handleRegister(event) {
             });
 
         if (result.error) {
+            console.error(
+                "Ошибка регистрации:",
+                result.error
+            );
+
             errorElement.textContent =
                 "❌ " + result.error.message;
+
             return;
         }
 
@@ -1138,7 +1117,10 @@ async function handleRegister(event) {
                 "✅ Подтвердите email и войдите";
         }
     } catch (error) {
-        console.error(error);
+        console.error(
+            "Критическая ошибка регистрации:",
+            error
+        );
 
         errorElement.textContent =
             "❌ Ошибка подключения к серверу";
@@ -1227,7 +1209,10 @@ async function handleForgotPassword(event) {
 
         event.target.reset();
     } catch (error) {
-        console.error(error);
+        console.error(
+            "Ошибка восстановления:",
+            error
+        );
 
         errorElement.textContent =
             "❌ Ошибка подключения к серверу";
