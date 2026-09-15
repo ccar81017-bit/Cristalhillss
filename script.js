@@ -1,2220 +1,1665 @@
-(function () {
-    function isMobileOrTablet() {
-        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+/*
+ * CRISTALHILLS — Supabase version
+ *
+ * ВАЖНО:
+ * 1. index.html должен подключать @supabase/supabase-js@2 ДО этого файла.
+ * 2. Вставь сюда свой Publishable key из Supabase.
+ * 3. Secret/service_role key сюда НИКОГДА не вставляй.
+ */
 
-        const mobileUserAgent =
-            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(userAgent);
+const SUPABASE_URL = 'https://zedgouirmabujahlpbjq.supabase.co';
 
-        const androidTablet =
-            /Android/i.test(userAgent) &&
-            !/Mobile/i.test(userAgent);
+// ============================================================
+// ВСТАВЬ СЮДА СВОЙ PUBLISHABLE KEY
+// ============================================================
 
-        const touchDevice =
-            ('ontouchstart' in window || navigator.maxTouchPoints > 0) &&
-            Math.min(window.screen.width, window.screen.height) <= 1200;
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_1SJJwVyWmCzNy4htOLvnGA_hAZOhYXJ';
 
-        return mobileUserAgent || androidTablet || touchDevice;
-    }
+// ============================================================
+// SUPABASE CLIENT
+// ============================================================
 
-    function checkDevice() {
-        const blocker = document.getElementById('device-blocker');
+if (!window.supabase || !window.supabase.createClient) {
+    console.error(
+        'Supabase CDN не загружен. Проверь index.html.'
+    );
+}
 
-        if (!blocker) {
-            return;
-        }
-
-        if (isMobileOrTablet()) {
-            document.documentElement.classList.add('device-blocked');
-            blocker.setAttribute('aria-hidden', 'false');
-        } else {
-            document.documentElement.classList.remove('device-blocked');
-            blocker.setAttribute('aria-hidden', 'true');
-        }
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', checkDevice);
-    } else {
-        checkDevice();
-    }
-
-    window.addEventListener('resize', checkDevice);
-    window.addEventListener('orientationchange', checkDevice);
-})();
+const supabaseClient = window.supabase
+    ? window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY
+    )
+    : null;
 
 
-const ADMINS = [
-    { username: 'nullkotek', password: 'garte454', rank: 'Гл.Админ' },
-    { username: 'kisyna123', password: 'ks%43', rank: 'Мл.Админ' },
-    { username: 'hazbi0002', password: 'hz2@a', rank: 'Мл.Админ' }
-];
+// ============================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================
 
 let currentUser = null;
-let questions = JSON.parse(localStorage.getItem('cristalhills_questions')) || [];
-let users = JSON.parse(localStorage.getItem('cristalhills_users')) || [];
 
-let servers = JSON.parse(localStorage.getItem('cristalhills_servers')) || [
-    {
-        name: 'Cristalhills',
-        status: 'online',
-        description: 'Cristalhills это проект, со своим сюжетом и квестами, где есть много игроков, с которыми вы можете подружиться и играть вместе, наш проект развивается и уже как год доступен для всех пользователей из разных стран, ждём вас на нашем сервере, скопируйте айпи ниже и установите сборку, так же по кнопке снизу, удачной вам игры.',
-        version: '1.20.4',
-        ips: [{ name: 'Основной', ip: 'play.cristalhills.net' }],
-        builds: [{ name: 'Сборка', url: 'https://example.com/build.zip' }],
-        featuresTitle: 'Почему Cristalhills?',
-        features: [
-            { icon: '📖', title: 'Сюжетные квесты', desc: 'Уникальная история с захватывающими приключениями' },
-            { icon: '⚔️', title: 'PvP сражения', desc: 'Сбалансированные бои и турниры' },
-            { icon: '🏰', title: 'Строительство', desc: 'Создавай замки вместе с друзьями' },
-            { icon: '👥', title: 'Комьюнити', desc: 'Дружелюбное сообщество игроков' }
-        ],
-        stats: [
-            { icon: '🎮', value: '1.20.4', label: 'Версия Minecraft' },
-            { icon: '🌍', value: '3+', label: 'Регионов' },
-            { icon: '📜', value: '50+', label: 'Квестов' },
-            { icon: '⚡', value: '24/7', label: 'Работа сервера' }
-        ]
-    }
-];
+let questions = [];
 
-let currentServerIndex = parseInt(localStorage.getItem('cristalhills_current_server')) || 0;
+let users = [];
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadCurrentUser();
-    setupNavigation();
-    setupForms();
-    updateUI();
-    loadServer(currentServerIndex);
-    renderServersPage();
-});
+let servers = [];
 
-function loadServer(idx) {
-    currentServerIndex = idx;
-    localStorage.setItem('cristalhills_current_server', String(idx));
-    const server = servers[idx];
+let currentServerIndex = parseInt(
+    localStorage.getItem('cristalhills_current_server') || '0',
+    10
+);
 
-    document.getElementById('current-server-name').textContent = server.name;
+let currentViewQuestionId = null;
 
-    const heroName = document.getElementById('hero-server-name');
+let currentAdminTab = 'servers';
 
-    if (heroName) {
-        const parts = server.name.match(/([a-zA-Z]+)([a-zA-Z]+)/);
 
-        heroName.innerHTML = parts
-            ? parts[1] + '<span class="highlight">' + parts[2] + '</span>'
-            : server.name;
-    }
+// ============================================================
+// НАСТРОЙКИ
+// ============================================================
 
-    const statusEl = document.getElementById('server-status');
-    const statusText = document.getElementById('status-text');
+const DEFAULT_SERVER = {
+    name: 'Cristalhills',
+    status: 'online',
+    description:
+        'Сюжетный Minecraft сервер с уникальной атмосферой, механиками и приключениями.',
+    version: '1.21.1',
 
-    if (statusEl && statusText) {
-        statusEl.className = 'server-status ' + server.status;
+    ips: [
+        'play.cristalhills.ru'
+    ],
 
-        const statusMap = {
-            online: 'Сервер онлайн',
-            maintenance: 'Обслуживание',
-            offline: 'Оффлайн'
-        };
+    builds: [
+        '1.21.1'
+    ],
 
-        statusText.textContent =
-            statusMap[server.status] || 'Сервер онлайн';
-    }
+    featuresTitle: 'Особенности сервера',
 
-    if (document.getElementById('hero-description')) {
-        document.getElementById('hero-description').textContent =
-            server.description;
-    }
-
-    if (document.getElementById('mc-version')) {
-        document.getElementById('mc-version').textContent =
-            server.version;
-    }
-
-    if (document.getElementById('features-title')) {
-        document.getElementById('features-title').textContent =
-            server.featuresTitle || 'Почему ' + server.name + '?';
-    }
-
-    var features = server.features || [
-        {
-            icon: '📖',
-            title: 'Сюжетные квесты',
-            desc: 'Уникальная история с захватывающими приключениями'
-        },
+    features: [
         {
             icon: '⚔️',
-            title: 'PvP сражения',
-            desc: 'Сбалансированные бои и турниры'
+            title: 'Уникальный сюжет',
+            description:
+                'Погрузитесь в увлекательную историю Cristalhills.'
         },
         {
-            icon: '🏰',
-            title: 'Строительство',
-            desc: 'Создавай замки вместе с друзьями'
+            icon: '🏗️',
+            title: 'Много механик',
+            description:
+                'Исследуйте множество интересных механик и возможностей.'
         },
         {
-            icon: '👥',
-            title: 'Комьюнити',
-            desc: 'Дружелюбное сообщество игроков'
+            icon: '✨',
+            title: 'Магия',
+            description:
+                'Используйте магические способности и открывайте новые возможности.'
+        },
+        {
+            icon: '🌍',
+            title: 'Большой мир',
+            description:
+                'Исследуйте огромный мир, полный тайн и приключений.'
         }
-    ];
+    ],
 
-    for (var i = 0; i < 4; i++) {
-        var f = features[i];
+    stats: {
+        players: '0',
+        online: '0',
+        version: '1.21.1'
+    }
+};
 
-        var iconEl =
-            document.getElementById('feature-icon-' + (i + 1));
 
-        var titleEl =
-            document.getElementById('feature-title-' + (i + 1));
+// ============================================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================================
 
-        var descEl =
-            document.getElementById('feature-desc-' + (i + 1));
-
-        if (iconEl) iconEl.textContent = f.icon || '⭐';
-        if (titleEl) titleEl.textContent = f.title || '';
-        if (descEl) descEl.textContent = f.desc || '';
+function safeJsonParse(value, fallback = null) {
+    if (value === null || value === undefined) {
+        return fallback;
     }
 
-    var stats = server.stats || [
-        { icon: '🎮', value: '1.20.4', label: 'Версия Minecraft' },
-        { icon: '🌍', value: '3+', label: 'Регионов' },
-        { icon: '📜', value: '50+', label: 'Квестов' },
-        { icon: '⚡', value: '24/7', label: 'Работа сервера' }
-    ];
-
-    for (var j = 0; j < 4; j++) {
-        var s = stats[j];
-
-        var iconEl2 =
-            document.getElementById('stat-icon-' + (j + 1));
-
-        var valueEl =
-            document.getElementById('stat-value-' + (j + 1));
-
-        var labelEl =
-            document.getElementById('stat-label-' + (j + 1));
-
-        if (iconEl2) iconEl2.textContent = s.icon || '⭐';
-        if (valueEl) valueEl.textContent = s.value || '';
-        if (labelEl) labelEl.textContent = s.label || '';
+    if (typeof value !== 'string') {
+        return value;
     }
 
-    const ipContainer = document.getElementById('ip-buttons');
+    try {
+        return JSON.parse(value);
+    } catch (error) {
+        console.warn('Ошибка JSON:', error);
+        return fallback;
+    }
+}
+
+
+function normalizeServer(server) {
+    if (!server) {
+        return {
+            ...DEFAULT_SERVER
+        };
+    }
+
+    return {
+        id: server.id,
+
+        name: server.name || DEFAULT_SERVER.name,
+
+        status: server.status || DEFAULT_SERVER.status,
+
+        description:
+            server.description ||
+            DEFAULT_SERVER.description,
+
+        version:
+            server.version ||
+            DEFAULT_SERVER.version,
+
+        ips:
+            Array.isArray(server.ips)
+                ? server.ips
+                : safeJsonParse(
+                    server.ips,
+                    DEFAULT_SERVER.ips
+                ),
+
+        builds:
+            Array.isArray(server.builds)
+                ? server.builds
+                : safeJsonParse(
+                    server.builds,
+                    DEFAULT_SERVER.builds
+                ),
+
+        featuresTitle:
+            server.features_title ||
+            DEFAULT_SERVER.featuresTitle,
+
+        features:
+            Array.isArray(server.features)
+                ? server.features
+                : safeJsonParse(
+                    server.features,
+                    DEFAULT_SERVER.features
+                ),
+
+        stats:
+            server.stats && typeof server.stats === 'object'
+                ? server.stats
+                : safeJsonParse(
+                    server.stats,
+                    DEFAULT_SERVER.stats
+                )
+    };
+}
+
+
+function normalizeQuestion(question) {
+    if (!question) {
+        return null;
+    }
+
+    return {
+        ...question,
+
+        answers:
+            Array.isArray(question.answers)
+                ? question.answers
+                : safeJsonParse(
+                    question.answers,
+                    []
+                ),
+
+        is_urgent:
+            question.is_urgent === true,
+
+        closed:
+            question.closed === true
+    };
+}
+
+
+function escapeHtml(value) {
+    if (value === null || value === undefined) {
+        return '';
+    }
+
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+
+function getCategoryName(category) {
+    const categories = {
+        general: 'Общие вопросы',
+        technical: 'Технические проблемы',
+        gameplay: 'Игровой процесс',
+        donation: 'Донат',
+        bug: 'Ошибка',
+        suggestion: 'Предложение',
+        other: 'Другое'
+    };
+
+    return categories[category] || category || 'Другое';
+}
+
+
+function formatDate(date) {
+    if (!date) {
+        return 'Неизвестно';
+    }
+
+    const parsed = new Date(date);
+
+    if (Number.isNaN(parsed.getTime())) {
+        return escapeHtml(date);
+    }
+
+    return parsed.toLocaleString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+
+function getCurrentServer() {
+    if (
+        !servers.length ||
+        currentServerIndex < 0 ||
+        currentServerIndex >= servers.length
+    ) {
+        return null;
+    }
+
+    return servers[currentServerIndex];
+}
+
+
+function isAdminUser(user = currentUser) {
+    if (!user) {
+        return false;
+    }
+
+    return (
+        user.isAdmin === true ||
+        user.rank === 'Гл.Админ' ||
+        user.rank === 'Мл.Админ'
+    );
+}
+
+
+function isChief(user = currentUser) {
+    return Boolean(
+        user &&
+        user.chiefFor !== null &&
+        user.chiefFor !== undefined
+    );
+}
+
+
+function isHelper(user = currentUser) {
+    return Boolean(
+        user &&
+        user.helperFor !== null &&
+        user.helperFor !== undefined
+    );
+}
+
+
+function canAccessAdmin(user = currentUser) {
+    if (!user) {
+        return false;
+    }
+
+    return (
+        isAdminUser(user) ||
+        isChief(user) ||
+        isHelper(user)
+    );
+}
+
+
+function canEditServer(index, user = currentUser) {
+    if (!user) {
+        return false;
+    }
+
+    if (isAdminUser(user)) {
+        return true;
+    }
+
+    const server = servers[index];
+
+    if (!server) {
+        return false;
+    }
+
+    if (
+        user.chiefFor !== null &&
+        user.chiefFor !== undefined &&
+        Number(user.chiefFor) === Number(server.id)
+    ) {
+        return true;
+    }
+
+    if (
+        user.helperFor !== null &&
+        user.helperFor !== undefined &&
+        Number(user.helperFor) === Number(server.id)
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
+
+// ============================================================
+// ЗАГРУЗКА ПОЛЬЗОВАТЕЛЯ
+// ============================================================
+
+async function loadCurrentUser() {
+    if (!supabaseClient) {
+        return null;
+    }
+
+    try {
+        const {
+            data: {
+                session
+            },
+            error
+        } = await supabaseClient.auth.getSession();
+
+        if (error) {
+            console.error(
+                'Ошибка получения сессии:',
+                error
+            );
+
+            return null;
+        }
+
+        if (!session || !session.user) {
+            currentUser = null;
+
+            updateUI();
+
+            return null;
+        }
+
+        const userId = session.user.id;
+
+        const {
+            data: profile,
+            error: profileError
+        } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (profileError) {
+            console.error(
+                'Ошибка загрузки профиля:',
+                profileError
+            );
+
+            return null;
+        }
+
+        if (!profile) {
+            currentUser = {
+                id: userId,
+                username:
+                    session.user.user_metadata?.username ||
+                    session.user.email?.split('@')[0] ||
+                    'Игрок',
+                email: session.user.email || '',
+                rank: 'Игрок',
+                chiefFor: null,
+                helperFor: null,
+                isAdmin: false
+            };
+        } else {
+            currentUser = {
+                id: profile.id,
+
+                username:
+                    profile.username ||
+                    session.user.email?.split('@')[0] ||
+                    'Игрок',
+
+                email:
+                    profile.email ||
+                    session.user.email ||
+                    '',
+
+                rank:
+                    profile.rank ||
+                    'Игрок',
+
+                chiefFor:
+                    profile.chief_for ?? null,
+
+                helperFor:
+                    profile.helper_for ?? null,
+
+                createdAt:
+                    profile.created_at || null,
+
+                lastLogin:
+                    profile.last_login || null,
+
+                isAdmin:
+                    profile.rank === 'Гл.Админ' ||
+                    profile.rank === 'Мл.Админ'
+            };
+        }
+
+        updateUI();
+
+        return currentUser;
+
+    } catch (error) {
+        console.error(
+            'Критическая ошибка загрузки пользователя:',
+            error
+        );
+
+        currentUser = null;
+
+        updateUI();
+
+        return null;
+    }
+}
+
+
+// ============================================================
+// ЗАГРУЗКА СЕРВЕРОВ
+// ============================================================
+
+async function loadServers() {
+    if (!supabaseClient) {
+        servers = [
+            normalizeServer(DEFAULT_SERVER)
+        ];
+
+        return servers;
+    }
+
+    try {
+        const {
+            data,
+            error
+        } = await supabaseClient
+            .from('servers')
+            .select('*')
+            .order('id', {
+                ascending: true
+            });
+
+        if (error) {
+            console.error(
+                'Ошибка загрузки серверов:',
+                error
+            );
+
+            servers = [
+                normalizeServer(DEFAULT_SERVER)
+            ];
+
+            return servers;
+        }
+
+        servers = (data || [])
+            .map(normalizeServer);
+
+        if (!servers.length) {
+            console.warn(
+                'В Supabase нет серверов.'
+            );
+
+            servers = [
+                normalizeServer(DEFAULT_SERVER)
+            ];
+        }
+
+        if (
+            currentServerIndex < 0 ||
+            currentServerIndex >= servers.length
+        ) {
+            currentServerIndex = 0;
+        }
+
+        localStorage.setItem(
+            'cristalhills_current_server',
+            String(currentServerIndex)
+        );
+
+        return servers;
+
+    } catch (error) {
+        console.error(
+            'Критическая ошибка загрузки серверов:',
+            error
+        );
+
+        servers = [
+            normalizeServer(DEFAULT_SERVER)
+        ];
+
+        return servers;
+    }
+}
+
+
+// ============================================================
+// ЗАГРУЗКА ВОПРОСОВ
+// ============================================================
+
+async function loadQuestions() {
+    if (!supabaseClient) {
+        questions = [];
+
+        return questions;
+    }
+
+    try {
+        const {
+            data,
+            error
+        } = await supabaseClient
+            .from('questions')
+            .select('*')
+            .order('id', {
+                ascending: false
+            });
+
+        if (error) {
+            console.error(
+                'Ошибка загрузки вопросов:',
+                error
+            );
+
+            questions = [];
+
+            return questions;
+        }
+
+        questions = (data || [])
+            .map(normalizeQuestion)
+            .filter(Boolean);
+
+        return questions;
+
+    } catch (error) {
+        console.error(
+            'Критическая ошибка загрузки вопросов:',
+            error
+        );
+
+        questions = [];
+
+        return questions;
+    }
+}
+
+
+// ============================================================
+// ЗАГРУЗКА ПОЛЬЗОВАТЕЛЕЙ
+// ============================================================
+
+async function loadUsers() {
+    if (!supabaseClient) {
+        users = [];
+
+        return users;
+    }
+
+    try {
+        const {
+            data,
+            error
+        } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .order('created_at', {
+                ascending: false
+            });
+
+        if (error) {
+            console.error(
+                'Ошибка загрузки пользователей:',
+                error
+            );
+
+            users = [];
+
+            return users;
+        }
+
+        users = (data || []).map(profile => ({
+            id: profile.id,
+
+            username:
+                profile.username || 'Игрок',
+
+            email:
+                profile.email || '',
+
+            rank:
+                profile.rank || 'Игрок',
+
+            chiefFor:
+                profile.chief_for ?? null,
+
+            helperFor:
+                profile.helper_for ?? null,
+
+            createdAt:
+                profile.created_at || null,
+
+            lastLogin:
+                profile.last_login || null,
+
+            isAdmin:
+                profile.rank === 'Гл.Админ' ||
+                profile.rank === 'Мл.Админ'
+        }));
+
+        return users;
+
+    } catch (error) {
+        console.error(
+            'Критическая ошибка загрузки пользователей:',
+            error
+        );
+
+        users = [];
+
+        return users;
+    }
+}
+
+
+// ============================================================
+// REALTIME — ОБНОВЛЕНИЕ ДАННЫХ У ВСЕХ
+// ============================================================
+
+function setupRealtime() {
+    if (!supabaseClient) {
+        return;
+    }
+
+    try {
+        supabaseClient
+            .channel('cristalhills-servers')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'servers'
+                },
+                async () => {
+                    console.log(
+                        'Получено обновление серверов.'
+                    );
+
+                    await loadServers();
+
+                    loadServer(
+                        currentServerIndex
+                    );
+
+                    renderServersPage();
+
+                    if (
+                        document
+                            .getElementById('admin-page')
+                            ?.classList
+                            .contains('active')
+                    ) {
+                        renderAdminServers();
+                    }
+                }
+            )
+            .subscribe();
+
+        supabaseClient
+            .channel('cristalhills-questions')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'questions'
+                },
+                async () => {
+                    console.log(
+                        'Получено обновление вопросов.'
+                    );
+
+                    await loadQuestions();
+
+                    if (
+                        currentUser &&
+                        canAccessAdmin()
+                    ) {
+                        renderAdminAllQuestions();
+                    }
+
+                    if (
+                        document
+                            .getElementById('support-page')
+                            ?.classList
+                            .contains('active')
+                    ) {
+                        renderQuestions();
+                    }
+                }
+            )
+            .subscribe();
+
+        supabaseClient
+            .channel('cristalhills-profiles')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'profiles'
+                },
+                async () => {
+                    console.log(
+                        'Получено обновление профилей.'
+                    );
+
+                    await loadCurrentUser();
+
+                    if (
+                        currentUser &&
+                        canAccessAdmin()
+                    ) {
+                        await loadUsers();
+
+                        renderUsersList();
+                    }
+                }
+            )
+            .subscribe();
+
+    } catch (error) {
+        console.error(
+            'Ошибка настройки Realtime:',
+            error
+        );
+    }
+}
+
+
+// ============================================================
+// ЗАГРУЗКА ТЕКУЩЕГО СЕРВЕРА
+// ============================================================
+
+function loadServer(index = 0) {
+    if (!servers.length) {
+        return;
+    }
+
+    if (
+        index < 0 ||
+        index >= servers.length
+    ) {
+        index = 0;
+    }
+
+    currentServerIndex = index;
+
+    localStorage.setItem(
+        'cristalhills_current_server',
+        String(index)
+    );
+
+    const server = servers[index];
+
+    if (!server) {
+        return;
+    }
+
+    const nameElement =
+        document.getElementById('server-name');
+
+    if (nameElement) {
+        nameElement.textContent =
+            server.name || 'Cristalhills';
+    }
+
+    const statusElement =
+        document.getElementById('server-status');
+
+    if (statusElement) {
+        statusElement.textContent =
+            server.status === 'online'
+                ? 'Онлайн'
+                : server.status === 'offline'
+                    ? 'Оффлайн'
+                    : server.status;
+    }
+
+    const descriptionElement =
+        document.getElementById('server-description');
+
+    if (descriptionElement) {
+        descriptionElement.textContent =
+            server.description || '';
+    }
+
+    const versionElement =
+        document.getElementById('server-version');
+
+    if (versionElement) {
+        versionElement.textContent =
+            server.version || '';
+    }
+
+    const statsPlayers =
+        document.getElementById('stat-players');
+
+    if (statsPlayers) {
+        statsPlayers.textContent =
+            server.stats?.players ?? '0';
+    }
+
+    const statsOnline =
+        document.getElementById('stat-online');
+
+    if (statsOnline) {
+        statsOnline.textContent =
+            server.stats?.online ?? '0';
+    }
+
+    const statsVersion =
+        document.getElementById('stat-version');
+
+    if (statsVersion) {
+        statsVersion.textContent =
+            server.stats?.version ||
+            server.version ||
+            '1.21.1';
+    }
+
+    const ipContainer =
+        document.getElementById('ip-buttons');
 
     if (ipContainer) {
         ipContainer.innerHTML = '';
 
-        server.ips.forEach(function(item) {
-            const btn = document.createElement('button');
+        const ips =
+            Array.isArray(server.ips)
+                ? server.ips
+                : [];
 
-            btn.className = 'btn btn-primary btn-lg';
+        ips.forEach(ip => {
+            const button =
+                document.createElement('button');
 
-            btn.innerHTML =
-                '<span class="btn-main">📋 ' +
-                escapeHtml(item.ip) +
-                '</span><span class="btn-sub">' +
-                escapeHtml(item.name) +
-                '</span>';
+            button.className =
+                'ip-button';
 
-            btn.onclick = function() {
-                copyIP(item.ip);
-            };
+            button.type =
+                'button';
 
-            ipContainer.appendChild(btn);
-        });
+            button.textContent =
+                ip;
 
-        server.builds.forEach(function(item) {
-            const btn = document.createElement('button');
+            button.onclick = () =>
+                copyIP(ip);
 
-            btn.className = 'btn btn-secondary btn-lg';
-
-            btn.innerHTML =
-                '<span class="btn-main">📥 ' +
-                escapeHtml(item.name) +
-                '</span><span class="btn-sub">Скачать</span>';
-
-            btn.onclick = function() {
-                downloadBuild(item.url);
-            };
-
-            ipContainer.appendChild(btn);
+            ipContainer.appendChild(
+                button
+            );
         });
     }
 
-    renderServersPage();
+    const buildsContainer =
+        document.getElementById('build-buttons');
+
+    if (buildsContainer) {
+        buildsContainer.innerHTML = '';
+
+        const builds =
+            Array.isArray(server.builds)
+                ? server.builds
+                : [];
+
+        builds.forEach(build => {
+            const button =
+                document.createElement('button');
+
+            button.className =
+                'build-button';
+
+            button.type =
+                'button';
+
+            button.textContent =
+                build;
+
+            buildsContainer.appendChild(
+                button
+            );
+        });
+    }
+
+    const featuresContainer =
+        document.getElementById('features-container');
+
+    if (featuresContainer) {
+        featuresContainer.innerHTML = '';
+
+        const features =
+            Array.isArray(server.features)
+                ? server.features
+                : [];
+
+        features.forEach(feature => {
+            const card =
+                document.createElement('div');
+
+            card.className =
+                'feature-card';
+
+            card.innerHTML = `
+                <div class="feature-icon">
+                    ${escapeHtml(feature.icon || '✨')}
+                </div>
+
+                <h3>
+                    ${escapeHtml(feature.title || '')}
+                </h3>
+
+                <p>
+                    ${escapeHtml(feature.description || '')}
+                </p>
+            `;
+
+            featuresContainer.appendChild(
+                card
+            );
+        });
+    }
+
+    const featuresTitle =
+        document.getElementById('features-title');
+
+    if (featuresTitle) {
+        featuresTitle.textContent =
+            server.featuresTitle ||
+            'Особенности сервера';
+    }
 }
+
+
+// ============================================================
+// СТРАНИЦА СЕРВЕРОВ
+// ============================================================
 
 function renderServersPage() {
-    const grid = document.getElementById('servers-page-grid');
-
-    if (!grid) return;
-
-    grid.innerHTML = '';
-
-    servers.forEach(function(server, idx) {
-        const card = document.createElement('div');
-
-        card.className =
-            'server-page-card' +
-            (idx === currentServerIndex ? ' active' : '');
-
-        card.onclick = function() {
-            loadServer(idx);
-            navigateTo('home');
-        };
-
-        const statusIcon =
-            server.status === 'online'
-                ? '🟢'
-                : server.status === 'maintenance'
-                    ? '🟠'
-                    : '🔴';
-
-        card.innerHTML =
-            '<div class="server-page-header">' +
-                '<span class="server-page-icon">🌐</span>' +
-                '<div class="server-page-name">' +
-                    escapeHtml(server.name) +
-                '</div>' +
-            '</div>' +
-            '<div class="server-page-status">' +
-                statusIcon +
-                ' ' +
-                (
-                    server.status === 'online'
-                        ? 'Онлайн'
-                        : server.status === 'maintenance'
-                            ? 'Обслуживание'
-                            : 'Оффлайн'
-                ) +
-            '</div>' +
-            '<button class="btn btn-primary server-page-btn">' +
-                'Выбрать' +
-            '</button>';
-
-        grid.appendChild(card);
-    });
-}
-
-function setupNavigation() {
-    document.querySelectorAll('.nav-link').forEach(function(link) {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-
-            const page = link.dataset.page;
-
-            if (page === 'auth') {
-                navigateTo(currentUser ? 'profile' : 'auth');
-            }
-            else if (page === 'admin' && canAccessAdmin()) {
-                navigateTo('admin');
-            }
-            else if (page === 'servers-list') {
-                renderServersPage();
-                navigateTo('servers-list');
-            }
-            else {
-                navigateTo(page);
-            }
-        });
-    });
-}
-
-function canAccessAdmin() {
-    if (!currentUser) return false;
-    if (currentUser.isAdmin) return true;
-    if (currentUser.chiefFor !== undefined) return true;
-    if (currentUser.helperFor !== undefined) return true;
-
-    return false;
-}
-
-function canEditServer(idx) {
-    if (!currentUser) return false;
-    if (currentUser.isAdmin) return true;
-    if (currentUser.chiefFor === idx) return true;
-    if (currentUser.helperFor === idx) return true;
-
-    return false;
-}
-
-function navigateTo(page) {
-    document.querySelectorAll('.page').forEach(function(p) {
-        p.classList.remove('active');
-    });
-
-    document.querySelectorAll('.nav-link').forEach(function(l) {
-        l.classList.remove('active');
-    });
-
-    document.getElementById(page + '-page').classList.add('active');
-
-    const activeLink =
-        document.querySelector(
-            '.nav-link[data-page="' + page + '"]'
+    const container =
+        document.getElementById(
+            'servers-page-grid'
         );
 
-    if (activeLink) {
-        activeLink.classList.add('active');
+    if (!container) {
+        return;
     }
 
-    if (page === 'support') {
-        renderQuestions();
+    container.innerHTML = '';
+
+    if (!servers.length) {
+        container.innerHTML = `
+            <div class="empty-state">
+                Серверов пока нет.
+            </div>
+        `;
+
+        return;
+    }
+
+    servers.forEach((server, index) => {
+        const card =
+            document.createElement('div');
+
+        card.className =
+            'server-card';
+
+        const isCurrent =
+            index === currentServerIndex;
+
+        const statusClass =
+            server.status === 'online'
+                ? 'online'
+                : 'offline';
+
+        card.innerHTML = `
+            <div class="server-card-header">
+                <div>
+                    <h3>
+                        ${escapeHtml(server.name)}
+                    </h3>
+
+                    <span class="server-status ${statusClass}">
+                        ${server.status === 'online'
+                            ? 'Онлайн'
+                            : 'Оффлайн'}
+                    </span>
+                </div>
+            </div>
+
+            <p class="server-card-description">
+                ${escapeHtml(server.description || '')}
+            </p>
+
+            <div class="server-card-info">
+                <div>
+                    <span>Версия</span>
+                    <strong>
+                        ${escapeHtml(server.version || '')}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Игроков</span>
+                    <strong>
+                        ${escapeHtml(
+                            server.stats?.online ?? '0'
+                        )}
+                    </strong>
+                </div>
+            </div>
+
+            <div class="server-card-ips">
+                ${
+                    (server.ips || [])
+                        .map(ip => `
+                            <button
+                                type="button"
+                                class="ip-button"
+                                onclick="copyIP('${String(ip)
+                                    .replace(/'/g, "\\'")}')"
+                            >
+                                ${escapeHtml(ip)}
+                            </button>
+                        `)
+                        .join('')
+                }
+            </div>
+
+            <button
+                type="button"
+                class="btn ${
+                    isCurrent
+                        ? 'btn-secondary'
+                        : 'btn-primary'
+                } server-select-button"
+                onclick="selectServer(${index})"
+            >
+                ${
+                    isCurrent
+                        ? 'Выбран'
+                        : 'Выбрать сервер'
+                }
+            </button>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+
+// ============================================================
+// ВЫБОР СЕРВЕРА
+// ============================================================
+
+function selectServer(index) {
+    if (
+        index < 0 ||
+        index >= servers.length
+    ) {
+        return;
+    }
+
+    currentServerIndex = index;
+
+    localStorage.setItem(
+        'cristalhills_current_server',
+        String(index)
+    );
+
+    loadServer(index);
+
+    renderServersPage();
+
+    navigateTo('home');
+}
+
+
+// ============================================================
+// КОПИРОВАНИЕ IP
+// ============================================================
+
+async function copyIP(ip) {
+    if (!ip) {
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(
+            ip
+        );
+
+        showNotification(
+            'IP адрес скопирован!',
+            'success'
+        );
+
+    } catch (error) {
+        console.error(
+            'Ошибка копирования:',
+            error
+        );
+
+        const textarea =
+            document.createElement('textarea');
+
+        textarea.value = ip;
+
+        textarea.style.position =
+            'fixed';
+
+        textarea.style.opacity =
+            '0';
+
+        document.body.appendChild(
+            textarea
+        );
+
+        textarea.select();
+
+        try {
+            document.execCommand(
+                'copy'
+            );
+
+            showNotification(
+                'IP адрес скопирован!',
+                'success'
+            );
+        } catch {
+            showNotification(
+                'Не удалось скопировать IP.',
+                'error'
+            );
+        }
+
+        textarea.remove();
+    }
+}
+
+
+// ============================================================
+// УВЕДОМЛЕНИЯ
+// ============================================================
+
+function showNotification(
+    message,
+    type = 'info'
+) {
+    const old =
+        document.querySelector(
+            '.cristalhills-notification'
+        );
+
+    if (old) {
+        old.remove();
+    }
+
+    const notification =
+        document.createElement('div');
+
+    notification.className =
+        `cristalhills-notification ${type}`;
+
+    notification.textContent =
+        message;
+
+    notification.style.position =
+        'fixed';
+
+    notification.style.top =
+        '90px';
+
+    notification.style.right =
+        '20px';
+
+    notification.style.zIndex =
+        '99999';
+
+    notification.style.padding =
+        '14px 20px';
+
+    notification.style.borderRadius =
+        '10px';
+
+    notification.style.background =
+        '#151a2d';
+
+    notification.style.border =
+        '1px solid rgba(99,102,241,.3)';
+
+    notification.style.color =
+        '#f1f5f9';
+
+    notification.style.boxShadow =
+        '0 10px 30px rgba(0,0,0,.35)';
+
+    notification.style.maxWidth =
+        '350px';
+
+    document.body.appendChild(
+        notification
+    );
+
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+
+// ============================================================
+// НАВИГАЦИЯ
+// ============================================================
+
+function setupNavigation() {
+    const navLinks =
+        document.querySelectorAll(
+            '.nav-link'
+        );
+
+    navLinks.forEach(link => {
+        link.addEventListener(
+            'click',
+            event => {
+                event.preventDefault();
+
+                const page =
+                    link.dataset.page ||
+                    link.getAttribute(
+                        'href'
+                    )?.replace('#', '');
+
+                if (page) {
+                    navigateTo(page);
+                }
+            }
+        );
+    });
+}
+
+
+function navigateTo(page) {
+    if (!page) {
+        return;
+    }
+
+    const pages =
+        document.querySelectorAll(
+            '.page'
+        );
+
+    pages.forEach(element => {
+        element.classList.remove(
+            'active'
+        );
+    });
+
+    const target =
+        document.getElementById(
+            `${page}-page`
+        );
+
+    if (!target) {
+        console.warn(
+            `Страница "${page}" не найдена.`
+        );
+
+        return;
+    }
+
+    target.classList.add(
+        'active'
+    );
+
+    const navLinks =
+        document.querySelectorAll(
+            '.nav-link'
+        );
+
+    navLinks.forEach(link => {
+        const linkPage =
+            link.dataset.page ||
+            link.getAttribute(
+                'href'
+            )?.replace('#', '');
+
+        link.classList.toggle(
+            'active',
+            linkPage === page
+        );
+    });
+
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+
+    if (page === 'home') {
+        loadServer(
+            currentServerIndex
+        );
+    }
+
+    if (page === 'servers') {
+        renderServersPage();
     }
 
     if (page === 'profile') {
         updateProfile();
     }
 
-    if (page === 'admin' && canAccessAdmin()) {
-        renderServersList();
-        loadAdminSettings();
-        renderUsersList();
-        renderAdminAllQuestions();
-    }
-}
-
-function setupForms() {
-    document.getElementById('login-form')
-        .addEventListener('submit', handleLogin);
-
-    document.getElementById('register-form')
-        .addEventListener('submit', handleRegister);
-
-    document.getElementById('question-form')
-        .addEventListener('submit', handleQuestionSubmit);
-
-    document.getElementById('forgot-form')
-        .addEventListener('submit', handleForgotPassword);
-
-    document.getElementById('promote-form')
-        .addEventListener('submit', handlePromote);
-
-    document.getElementById('add-server-form')
-        .addEventListener('submit', handleAddServer);
-
-    document.getElementById('assign-role-form')
-        .addEventListener('submit', handleAssignRole);
-}
-
-function handleLogin(e) {
-    e.preventDefault();
-
-    const username =
-        document.getElementById('login-username').value.trim();
-
-    const password =
-        document.getElementById('login-password').value;
-
-    const errorEl =
-        document.getElementById('login-error');
-
-    errorEl.textContent = '';
-
-    const admin = ADMINS.find(function(a) {
-        return a.username === username &&
-               a.password === password;
-    });
-
-    const user = users.find(function(u) {
-        return u.username === username &&
-               u.password === password;
-    });
-
-    if (admin) {
-        currentUser = {
-            ...admin,
-            isAdmin: true,
-            email: admin.username + '@admin.net',
-            regDate: new Date().toLocaleDateString(),
-            lastLogin: new Date().toLocaleString()
-        };
-    }
-    else if (user) {
-        currentUser = {
-            ...user,
-            isAdmin: false
-        };
-    }
-    else {
-        errorEl.textContent = '❌ Неверно';
-        return;
+    if (page === 'support') {
+        renderQuestions();
     }
 
-    localStorage.setItem(
-        'cristalhills_current',
-        JSON.stringify(currentUser)
-    );
-
-    loadCurrentUser();
-    updateUI();
-    updateProfile();
-    navigateTo('profile');
-
-    e.target.reset();
-}
-
-function handleRegister(e) {
-    e.preventDefault();
-
-    const username =
-        document.getElementById('register-username').value.trim();
-
-    const email =
-        document.getElementById('register-email').value.trim();
-
-    const password =
-        document.getElementById('register-password').value;
-
-    const confirm =
-        document.getElementById('register-confirm').value;
-
-    const errorEl =
-        document.getElementById('register-error');
-
-    const successEl =
-        document.getElementById('register-success');
-
-    errorEl.textContent = '';
-    successEl.textContent = '';
-
-    if (password !== confirm) {
-        errorEl.textContent = '❌ Пароли не совпадают';
-        return;
-    }
-
-    if (password.length < 4) {
-        errorEl.textContent = '❌ Минимум 4 символа';
-        return;
-    }
-
-    const allUsernames =
-        ADMINS
-            .map(function(a) { return a.username; })
-            .concat(
-                users.map(function(u) {
-                    return u.username;
-                })
+    if (page === 'admin') {
+        if (!canAccessAdmin()) {
+            showNotification(
+                'У вас нет доступа к панели администратора.',
+                'error'
             );
 
-    if (allUsernames.indexOf(username) !== -1) {
-        errorEl.textContent = '❌ Ник занят';
-        return;
+            navigateTo('home');
+
+            return;
+        }
+
+        renderAdminPage();
     }
-
-    const allEmails =
-        ADMINS
-            .map(function(a) { return a.email; })
-            .concat(
-                users.map(function(u) {
-                    return u.email;
-                })
-            );
-
-    if (allEmails.indexOf(email) !== -1) {
-        errorEl.textContent = '❌ Email занят';
-        return;
-    }
-
-    users.push({
-        username: username,
-        email: email,
-        password: password,
-        rank: 'Игрок',
-        regDate: new Date().toLocaleDateString(),
-        lastLogin: new Date().toLocaleString(),
-        chiefFor: undefined,
-        helperFor: undefined
-    });
-
-    localStorage.setItem(
-        'cristalhills_users',
-        JSON.stringify(users)
-    );
-
-    successEl.textContent = '✅ Создан! Войдите.';
-
-    e.target.reset();
-
-    setTimeout(function() {
-        showLogin();
-        successEl.textContent = '';
-    }, 2000);
-}
-
-function handleForgotPassword(e) {
-    e.preventDefault();
-
-    const username =
-        document.getElementById('forgot-username').value.trim();
-
-    const email =
-        document.getElementById('forgot-email').value.trim();
-
-    const errorEl =
-        document.getElementById('forgot-error');
-
-    const successEl =
-        document.getElementById('forgot-success');
-
-    errorEl.textContent = '';
-    successEl.textContent = '';
-
-    const user = users.find(function(u) {
-        return u.username === username &&
-               u.email === email;
-    });
-
-    if (!user) {
-        errorEl.textContent = '❌ Не найден';
-        return;
-    }
-
-    questions.push({
-        id: Date.now(),
-        author: username,
-        title: '🔴 ВОССТАНОВЛЕНИЕ: ' + username,
-        category: 'password',
-        text: 'Пароль: ' + user.password,
-        date: new Date().toLocaleString(),
-        answer: null,
-        answerBy: null,
-        answers: [],
-        isUrgent: true,
-        closed: false
-    });
-
-    localStorage.setItem(
-        'cristalhills_questions',
-        JSON.stringify(questions)
-    );
-
-    successEl.textContent = '✅ Отправлен!';
-
-    e.target.reset();
-
-    setTimeout(function() {
-        showLogin();
-        successEl.textContent = '';
-    }, 3000);
-}
-
-function handlePromote(e) {
-    e.preventDefault();
-
-    const username =
-        document.getElementById('promote-username').value;
-
-    const newRank =
-        document.getElementById('promote-rank').value;
-
-    const idx =
-        users.findIndex(function(u) {
-            return u.username === username;
-        });
-
-    if (idx === -1) {
-        alert('❌');
-        return;
-    }
-
-    users[idx].rank = newRank;
-
-    localStorage.setItem(
-        'cristalhills_users',
-        JSON.stringify(users)
-    );
-
-    closePromoteModal();
-    renderUsersList();
-}
-
-function handleAssignRole(e) {
-    e.preventDefault();
-
-    const username =
-        document.getElementById('assign-username').value;
-
-    const serverIdx =
-        parseInt(
-            document.getElementById('assign-server').value
-        );
-
-    const role =
-        document.getElementById('assign-role').value;
-
-    const idx =
-        users.findIndex(function(u) {
-            return u.username === username;
-        });
-
-    if (idx === -1) {
-        alert('❌');
-        return;
-    }
-
-    users[idx].chiefFor = undefined;
-    users[idx].helperFor = undefined;
-
-    if (role === 'chief') {
-        users[idx].chiefFor = serverIdx;
-    }
-    else if (role === 'helper') {
-        users[idx].helperFor = serverIdx;
-    }
-
-    localStorage.setItem(
-        'cristalhills_users',
-        JSON.stringify(users)
-    );
-
-    closeAssignModal();
-    renderUsersList();
-
-    alert('✅ Назначен!');
-}
-
-function handleAddServer(e) {
-    e.preventDefault();
-
-    const name =
-        document.getElementById('new-server-name').value.trim();
-
-    if (!name) return;
-
-    servers.push({
-        name: name,
-        status: 'online',
-        description: 'Сервер ' + name,
-        version: '1.20.4',
-        ips: [
-            {
-                name: 'IP',
-                ip:
-                    'play.' +
-                    name.toLowerCase().replace(/\s/g, '') +
-                    '.net'
-            }
-        ],
-        builds: [
-            {
-                name: 'Сборка',
-                url: 'https://example.com/build.zip'
-            }
-        ],
-        featuresTitle: 'Почему ' + name + '?',
-        features: [
-            {
-                icon: '📖',
-                title: 'Сюжетные квесты',
-                desc: 'Уникальная история'
-            },
-            {
-                icon: '⚔️',
-                title: 'PvP сражения',
-                desc: 'Сбалансированные бои'
-            },
-            {
-                icon: '🏰',
-                title: 'Строительство',
-                desc: 'Создавай замки'
-            },
-            {
-                icon: '👥',
-                title: 'Комьюнити',
-                desc: 'Дружелюбные игроки'
-            }
-        ],
-        stats: [
-            {
-                icon: '🎮',
-                value: '1.20.4',
-                label: 'Версия Minecraft'
-            },
-            {
-                icon: '🌍',
-                value: '3+',
-                label: 'Регионов'
-            },
-            {
-                icon: '📜',
-                value: '50+',
-                label: 'Квестов'
-            },
-            {
-                icon: '⚡',
-                value: '24/7',
-                label: 'Работа сервера'
-            }
-        ]
-    });
-
-    localStorage.setItem(
-        'cristalhills_servers',
-        JSON.stringify(servers)
-    );
-
-    closeAddServerModal();
-    renderServersList();
-    renderServersPage();
-
-    alert('✅ Создано: ' + name);
-}
-
-function logout() {
-    currentUser = null;
-
-    localStorage.removeItem('cristalhills_current');
 
     updateUI();
-    updateProfile();
-
-    navigateTo('home');
 }
 
-function loadCurrentUser() {
-    const saved =
-        localStorage.getItem('cristalhills_current');
 
-    if (saved) {
-        currentUser = JSON.parse(saved);
-    }
-}
+// ============================================================
+// ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
+// ============================================================
 
 function updateUI() {
     const authLink =
-        document.getElementById('auth-link');
+        document.getElementById(
+            'auth-link'
+        );
 
     const adminLink =
-        document.getElementById('admin-panel-link');
+        document.getElementById(
+            'admin-link'
+        );
 
-    const deleteBtn =
-        document.getElementById('delete-account-btn');
+    const profileLink =
+        document.getElementById(
+            'profile-link'
+        );
 
-    if (currentUser) {
-        authLink.innerHTML =
-            '<span class="nav-icon">👤</span>' +
-            currentUser.username;
+    if (authLink) {
+        if (currentUser) {
+            authLink.textContent =
+                'Выйти';
 
-        authLink.dataset.page = 'profile';
-        authLink.style.pointerEvents = 'none';
+            authLink.onclick = event => {
+                event.preventDefault();
 
-        if (canAccessAdmin()) {
-            adminLink.style.display = 'flex';
+                logout();
+            };
+        } else {
+            authLink.textContent =
+                'Войти';
 
-            if (deleteBtn) {
-                deleteBtn.style.display = 'none';
-            }
-        }
-        else {
-            adminLink.style.display = 'none';
+            authLink.onclick = event => {
+                event.preventDefault();
 
-            if (deleteBtn) {
-                deleteBtn.style.display = 'inline-flex';
-            }
-        }
-    }
-    else {
-        authLink.innerHTML =
-            '<span class="nav-icon">🔑</span>Войти';
-
-        authLink.dataset.page = 'auth';
-        authLink.style.pointerEvents = 'auto';
-
-        adminLink.style.display = 'none';
-
-        if (deleteBtn) {
-            deleteBtn.style.display = 'inline-flex';
+                navigateTo('auth');
+            };
         }
     }
+
+    if (profileLink) {
+        profileLink.style.display =
+            currentUser
+                ? ''
+                : 'none';
+    }
+
+    if (adminLink) {
+        adminLink.style.display =
+            canAccessAdmin()
+                ? ''
+                : 'none';
+    }
+
+    const userNameElements =
+        document.querySelectorAll(
+            '[data-user-name]'
+        );
+
+    userNameElements.forEach(
+        element => {
+            element.textContent =
+                currentUser?.username ||
+                '';
+        }
+    );
+
+    const userRankElements =
+        document.querySelectorAll(
+            '[data-user-rank]'
+        );
+
+    userRankElements.forEach(
+        element => {
+            element.textContent =
+                currentUser?.rank ||
+                'Игрок';
+        }
+    );
 }
+
+
+// ============================================================
+// ПРОФИЛЬ
+// ============================================================
 
 function updateProfile() {
-    const usernameEl =
-        document.getElementById('profile-username');
-
-    const rankEl =
-        document.getElementById('profile-rank');
-
-    const avatarEl =
-        document.getElementById('profile-avatar-letter');
-
-    const emailEl =
-        document.getElementById('profile-email');
-
-    const regDateEl =
-        document.getElementById('profile-reg-date');
-
-    const lastLoginEl =
-        document.getElementById('profile-last-login');
-
-    if (currentUser) {
-        if (usernameEl) {
-            usernameEl.textContent =
-                currentUser.username;
-        }
-
-        if (rankEl) {
-            rankEl.textContent =
-                currentUser.rank || 'Игрок';
-        }
-
-        if (avatarEl) {
-            avatarEl.textContent =
-                currentUser.username[0].toUpperCase();
-        }
-
-        if (emailEl) {
-            emailEl.textContent =
-                currentUser.email || 'не указан';
-        }
-
-        if (regDateEl) {
-            regDateEl.textContent =
-                currentUser.regDate || '-';
-        }
-
-        if (lastLoginEl) {
-            lastLoginEl.textContent =
-                currentUser.lastLogin || '-';
-        }
-    }
-    else {
-        if (usernameEl) {
-            usernameEl.textContent = 'Гость';
-        }
-
-        if (rankEl) {
-            rankEl.textContent = 'Игрок';
-        }
-
-        if (avatarEl) {
-            avatarEl.textContent = 'G';
-        }
-
-        if (emailEl) {
-            emailEl.textContent = 'не указан';
-        }
-
-        if (regDateEl) {
-            regDateEl.textContent = '-';
-        }
-
-        if (lastLoginEl) {
-            lastLoginEl.textContent = '-';
-        }
-    }
-}
-
-function switchAdminTab(tabName) {
-    document.querySelectorAll('.admin-tab-content')
-        .forEach(function(t) {
-            t.classList.remove('active');
-        });
-
-    document.querySelectorAll('.admin-tab-btn')
-        .forEach(function(b) {
-            b.classList.remove('active');
-        });
-
-    document.getElementById(
-        'admin-tab-' + tabName
-    ).classList.add('active');
-
-    document.querySelector(
-        '.admin-tab-btn[onclick="switchAdminTab(\'' +
-        tabName +
-        '\')"]'
-    ).classList.add('active');
-
-    if (tabName === 'servers') {
-        renderServersList();
-    }
-
-    if (tabName === 'settings') {
-        loadAdminSettings();
-    }
-
-    if (tabName === 'users') {
-        renderUsersList();
-    }
-
-    if (tabName === 'questions') {
-        renderAdminAllQuestions();
-    }
-}
-
-function renderServersList() {
-    const container =
-        document.getElementById('servers-list');
-
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    servers.forEach(function(server, idx) {
-        if (!canEditServer(idx)) return;
-
-        const card =
-            document.createElement('div');
-
-        card.className =
-            'server-card' +
-            (idx === currentServerIndex
-                ? ' active'
-                : '');
-
-        const statusIcon =
-            server.status === 'online'
-                ? '🟢'
-                : server.status === 'maintenance'
-                    ? '🟠'
-                    : '🔴';
-
-        card.innerHTML =
-            '<div class="server-info">' +
-                '<span class="server-icon">🌐</span>' +
-                '<div>' +
-                    '<div class="server-name">' +
-                        escapeHtml(server.name) +
-                    '</div>' +
-                    '<div class="server-status-text">' +
-                        statusIcon +
-                        ' ' +
-                        server.status +
-                    '</div>' +
-                '</div>' +
-            '</div>' +
-            '<div class="server-actions">' +
-                '<button class="btn btn-primary btn-sm" onclick="switchToServer(' +
-                    idx +
-                ')">OK</button>' +
-                (
-                    idx === 0 &&
-                    currentUser.isAdmin
-                        ? '<button class="btn btn-danger btn-sm" onclick="deleteServer(' +
-                            idx +
-                          ')">🗑️</button>'
-                        : ''
-                ) +
-            '</div>';
-
-        container.appendChild(card);
-    });
-}
-
-function switchToServer(idx) {
-    loadServer(idx);
-    renderServersList();
-}
-
-function deleteServer(idx) {
-    if (servers.length <= 1) {
-        alert('⚠️ 1+ ветка');
-        return;
-    }
-
-    if (!confirm('⚠️ Удалить?')) return;
-
-    servers.splice(idx, 1);
-
-    localStorage.setItem(
-        'cristalhills_servers',
-        JSON.stringify(servers)
-    );
-
-    if (currentServerIndex >= servers.length) {
-        currentServerIndex = 0;
-    }
-
-    loadServer(currentServerIndex);
-    renderServersList();
-    renderServersPage();
-}
-
-function loadAdminSettings() {
-    const server = servers[currentServerIndex];
-
-    document.getElementById('admin-status').value =
-        server.status;
-
-    document.getElementById('admin-description').value =
-        server.description;
-
-    document.getElementById('admin-version').value =
-        server.version;
-
-    document.getElementById('admin-features-title').value =
-        server.featuresTitle ||
-        'Почему ' + server.name + '?';
-
-    renderAdminIps();
-    renderAdminBuilds();
-    renderAdminFeaturesCustom();
-    renderAdminStatsCustom();
-}
-
-function renderAdminIps() {
-    const container =
-        document.getElementById('admin-ips-list');
-
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    const server = servers[currentServerIndex];
-
-    server.ips.forEach(function(item, idx) {
-        const div =
-            document.createElement('div');
-
-        div.style.display = 'flex';
-        div.style.gap = '10px';
-        div.style.marginBottom = '10px';
-
-        div.innerHTML =
-            '<input type="text" class="form-input" value="' +
-            escapeHtml(item.name) +
-            '" data-idx="' +
-            idx +
-            '" data-field="name" style="flex:1;">' +
-
-            '<input type="text" class="form-input" value="' +
-            escapeHtml(item.ip) +
-            '" data-idx="' +
-            idx +
-            '" data-field="ip" style="flex:1;">' +
-
-            '<button class="btn btn-danger" onclick="removeIp(' +
-            idx +
-            ')">🗑️</button>';
-
-        container.appendChild(div);
-    });
-}
-
-function renderAdminBuilds() {
-    const container =
-        document.getElementById('admin-builds-list');
-
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    const server = servers[currentServerIndex];
-
-    server.builds.forEach(function(item, idx) {
-        const div =
-            document.createElement('div');
-
-        div.style.display = 'flex';
-        div.style.gap = '10px';
-        div.style.marginBottom = '10px';
-
-        div.innerHTML =
-            '<input type="text" class="form-input" value="' +
-            escapeHtml(item.name) +
-            '" data-idx="' +
-            idx +
-            '" data-field="name" style="flex:1;">' +
-
-            '<input type="text" class="form-input" value="' +
-            escapeHtml(item.url) +
-            '" data-idx="' +
-            idx +
-            '" data-field="url" style="flex:1;">' +
-
-            '<button class="btn btn-danger" onclick="removeBuild(' +
-            idx +
-            ')">🗑️</button>';
-
-        container.appendChild(div);
-    });
-}
-
-function renderAdminFeaturesCustom() {
-    const container =
-        document.getElementById(
-            'admin-features-custom'
-        );
-
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    const server =
-        servers[currentServerIndex];
-
-    var features =
-        server.features || [];
-
-    for (var i = 0; i < 4; i++) {
-        var f =
-            features[i] || {
-                icon: '⭐',
-                title: '',
-                desc: ''
-            };
-
-        var div =
-            document.createElement('div');
-
-        div.style.display = 'flex';
-        div.style.gap = '8px';
-        div.style.marginBottom = '8px';
-        div.style.alignItems = 'center';
-
-        div.innerHTML =
-            '<span style="min-width:20px;">' +
-                (i + 1) +
-            '.</span>' +
-
-            '<input type="text" class="form-input" value="' +
-                escapeHtml(f.icon) +
-            '" id="f-icon-' +
-                i +
-            '" style="width:50px;" placeholder="📖">' +
-
-            '<input type="text" class="form-input" value="' +
-                escapeHtml(f.title) +
-            '" id="f-title-' +
-                i +
-            '" style="flex:1;" placeholder="Название">' +
-
-            '<input type="text" class="form-input" value="' +
-                escapeHtml(f.desc) +
-            '" id="f-desc-' +
-                i +
-            '" style="flex:2;" placeholder="Описание">';
-
-        container.appendChild(div);
-    }
-}
-
-function renderAdminStatsCustom() {
-    const container =
-        document.getElementById(
-            'admin-stats-custom'
-        );
-
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    const server =
-        servers[currentServerIndex];
-
-    var stats =
-        server.stats || [];
-
-    for (var i = 0; i < 4; i++) {
-        var s =
-            stats[i] || {
-                icon: '⭐',
-                value: '',
-                label: ''
-            };
-
-        var div =
-            document.createElement('div');
-
-        div.style.display = 'flex';
-        div.style.gap = '8px';
-        div.style.marginBottom = '8px';
-        div.style.alignItems = 'center';
-
-        div.innerHTML =
-            '<span style="min-width:20px;">' +
-                (i + 1) +
-            '.</span>' +
-
-            '<input type="text" class="form-input" value="' +
-                escapeHtml(s.icon) +
-            '" id="s-icon-' +
-                i +
-            '" style="width:50px;" placeholder="🎮">' +
-
-            '<input type="text" class="form-input" value="' +
-                escapeHtml(s.value) +
-            '" id="s-value-' +
-                i +
-            '" style="width:80px;" placeholder="1.20.4">' +
-
-            '<input type="text" class="form-input" value="' +
-                escapeHtml(s.label) +
-            '" id="s-label-' +
-                i +
-            '" style="flex:1;" placeholder="Версия">';
-
-        container.appendChild(div);
-    }
-}
-
-function addNewIpField() {
-    servers[currentServerIndex].ips.push({
-        name: 'IP',
-        ip: 'play.example.com'
-    });
-
-    localStorage.setItem(
-        'cristalhills_servers',
-        JSON.stringify(servers)
-    );
-
-    renderAdminIps();
-}
-
-function addNewBuildField() {
-    servers[currentServerIndex].builds.push({
-        name: 'Сборка',
-        url: 'https://example.com/build.zip'
-    });
-
-    localStorage.setItem(
-        'cristalhills_servers',
-        JSON.stringify(servers)
-    );
-
-    renderAdminBuilds();
-}
-
-function removeIp(idx) {
-    const server =
-        servers[currentServerIndex];
-
-    if (server.ips.length <= 1) {
-        alert('⚠️ 1+ IP');
-        return;
-    }
-
-    server.ips.splice(idx, 1);
-
-    localStorage.setItem(
-        'cristalhills_servers',
-        JSON.stringify(servers)
-    );
-
-    renderAdminIps();
-}
-
-function removeBuild(idx) {
-    const server =
-        servers[currentServerIndex];
-
-    if (server.builds.length <= 1) {
-        alert('⚠️ 1+ сборка');
-        return;
-    }
-
-    server.builds.splice(idx, 1);
-
-    localStorage.setItem(
-        'cristalhills_servers',
-        JSON.stringify(servers)
-    );
-
-    renderAdminBuilds();
-}
-
-function saveAdminSettings() {
-    const server =
-        servers[currentServerIndex];
-
-    server.status =
-        document.getElementById(
-            'admin-status'
-        ).value;
-
-    server.description =
-        document.getElementById(
-            'admin-description'
-        ).value.trim();
-
-    server.version =
-        document.getElementById(
-            'admin-version'
-        ).value.trim();
-
-    server.featuresTitle =
-        document.getElementById(
-            'admin-features-title'
-        ).value.trim();
-
-    var ipInputs =
-        document.querySelectorAll(
-            '#admin-ips-list input'
-        );
-
-    var newIps = [];
-
-    for (var i = 0; i < ipInputs.length; i += 2) {
-        var nameInput = ipInputs[i];
-        var ipInput = ipInputs[i + 1];
-
-        if (nameInput && ipInput) {
-            newIps.push({
-                name: nameInput.value,
-                ip: ipInput.value
-            });
-        }
-    }
-
-    server.ips = newIps;
-
-    var buildInputs =
-        document.querySelectorAll(
-            '#admin-builds-list input'
-        );
-
-    var newBuilds = [];
-
-    for (var j = 0; j < buildInputs.length; j += 2) {
-        var nameInput2 = buildInputs[j];
-        var urlInput = buildInputs[j + 1];
-
-        if (nameInput2 && urlInput) {
-            newBuilds.push({
-                name: nameInput2.value,
-                url: urlInput.value
-            });
-        }
-    }
-
-    server.builds = newBuilds;
-
-    var newFeatures = [];
-
-    for (var k = 0; k < 4; k++) {
-        var iconInput =
-            document.getElementById(
-                'f-icon-' + k
-            );
-
-        var titleInput =
-            document.getElementById(
-                'f-title-' + k
-            );
-
-        var descInput =
-            document.getElementById(
-                'f-desc-' + k
-            );
-
-        if (
-            iconInput &&
-            titleInput &&
-            descInput
-        ) {
-            newFeatures.push({
-                icon: iconInput.value,
-                title: titleInput.value,
-                desc: descInput.value
-            });
-        }
-    }
-
-    server.features = newFeatures;
-
-    var newStats = [];
-
-    for (var m = 0; m < 4; m++) {
-        var iconInput2 =
-            document.getElementById(
-                's-icon-' + m
-            );
-
-        var valueInput =
-            document.getElementById(
-                's-value-' + m
-            );
-
-        var labelInput =
-            document.getElementById(
-                's-label-' + m
-            );
-
-        if (
-            iconInput2 &&
-            valueInput &&
-            labelInput
-        ) {
-            newStats.push({
-                icon: iconInput2.value,
-                value: valueInput.value,
-                label: labelInput.value
-            });
-        }
-    }
-
-    server.stats = newStats;
-
-    localStorage.setItem(
-        'cristalhills_servers',
-        JSON.stringify(servers)
-    );
-
-    loadServer(currentServerIndex);
-
-    const msgEl =
-        document.getElementById(
-            'admin-save-msg'
-        );
-
-    msgEl.textContent = '✅ Сохранено!';
-
-    setTimeout(function() {
-        msgEl.textContent = '';
-    }, 3000);
-}
-
-function renderUsersList() {
-    const container =
-        document.getElementById('users-list');
-
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    ADMINS.concat(users).forEach(function(u) {
-        const isAdmin =
-            ADMINS.find(function(a) {
-                return a.username === u.username;
-            });
-
-        const isCurrentUser =
-            currentUser &&
-            currentUser.username === u.username;
-
-        const card =
-            document.createElement('div');
-
-        card.className =
-            'user-card' +
-            (isAdmin ? ' admin' : '');
-
-        card.dataset.username =
-            u.username.toLowerCase();
-
-        var roleText =
-            isAdmin
-                ? u.rank
-                : 'Игрок';
-
-        if (u.chiefFor !== undefined) {
-            roleText =
-                '👑 Главный за ' +
-                servers[u.chiefFor].name;
-        }
-        else if (u.helperFor !== undefined) {
-            roleText =
-                '🔹 Помощник ' +
-                servers[u.helperFor].name;
-        }
-
-        var actionsHtml = '';
-
-        if (
-            !isAdmin &&
-            !isCurrentUser &&
-            currentUser &&
-            currentUser.isAdmin
-        ) {
-            actionsHtml =
-                '<div class="user-actions">' +
-                    '<button class="btn btn-primary btn-sm" onclick="openAssignModal(\'' +
-                        escapeHtml(u.username) +
-                    '\')">🎯</button>' +
-                '</div>';
-        }
-
-        card.innerHTML =
-            '<div class="user-row">' +
-                '<span class="user-label">👤</span>' +
-                '<span class="user-value">' +
-                    escapeHtml(u.username) +
-                '</span>' +
-            '</div>' +
-
-            '<div class="user-row">' +
-                '<span class="user-label">🔑</span>' +
-                '<span class="user-value">' +
-                    escapeHtml(u.password) +
-                '</span>' +
-            '</div>' +
-
-            '<div class="user-row">' +
-                '<span class="user-label">📧</span>' +
-                '<span class="user-value">' +
-                    escapeHtml(u.email || '-') +
-                '</span>' +
-            '</div>' +
-
-            '<div class="user-row">' +
-                '<span class="user-label">🏷️</span>' +
-                '<span class="user-value">' +
-                    roleText +
-                '</span>' +
-            '</div>' +
-
-            actionsHtml;
-
-        container.appendChild(card);
-    });
-}
-
-function openAssignModal(username) {
-    document.getElementById(
-        'assign-username'
-    ).value = username;
-
-    const select =
-        document.getElementById(
-            'assign-server'
-        );
-
-    select.innerHTML = '';
-
-    servers.forEach(function(s, idx) {
-        const opt =
-            document.createElement('option');
-
-        opt.value = idx;
-        opt.textContent = s.name;
-
-        select.appendChild(opt);
-    });
-
-    document.getElementById(
-        'assign-role-modal'
-    ).classList.add('show');
-}
-
-function closeAssignModal() {
-    document.getElementById(
-        'assign-role-modal'
-    ).classList.remove('show');
-}
-
-function openPromoteModal(username) {
-    document.getElementById(
-        'promote-username'
-    ).value = username;
-
-    document.getElementById(
-        'promote-modal'
-    ).classList.add('show');
-}
-
-function closePromoteModal() {
-    document.getElementById(
-        'promote-modal'
-    ).classList.remove('show');
-}
-
-function showAddServerModal() {
-    document.getElementById(
-        'add-server-modal'
-    ).classList.add('show');
-}
-
-function closeAddServerModal() {
-    document.getElementById(
-        'add-server-modal'
-    ).classList.remove('show');
-
-    document.getElementById(
-        'add-server-form'
-    ).reset();
-}
-
-function renderAdminAllQuestions() {
-    const container =
-        document.getElementById(
-            'admin-all-questions'
-        );
-
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    const allQuestions =
-        questions
-            .slice()
-            .sort(function(a, b) {
-                return new Date(b.date) -
-                       new Date(a.date);
-            });
-
-    if (allQuestions.length === 0) {
-        container.innerHTML =
-            '<div class="question-item placeholder">' +
-                '<p>Нет вопросов</p>' +
-            '</div>';
-
-        return;
-    }
-
-    allQuestions.forEach(function(q) {
-        container.appendChild(
-            createQuestionCard(q)
-        );
-    });
-}
-
-function downloadBuild(url) {
-    if (url) {
-        window.open(url, '_blank');
-    }
-}
-
-function renderQuestions() {
-    const list =
-        document.getElementById(
-            'questions-list'
-        );
-
-    const adminList =
-        document.getElementById(
-            'admin-questions-list'
-        );
-
-    if (!list || !adminList) return;
-
-    const myQuestions =
-        currentUser
-            ? questions.filter(function(q) {
-                return q.author ===
-                       currentUser.username;
-            })
-            : [];
-
-    const allQuestions =
-        questions
-            .slice()
-            .sort(function(a, b) {
-                return new Date(b.date) -
-                       new Date(a.date);
-            });
-
-    list.innerHTML =
-        myQuestions.length
-            ? ''
-            : '<div class="question-item placeholder">' +
-                '<p>📭</p>' +
-              '</div>';
-
-    adminList.innerHTML =
-        allQuestions.length
-            ? ''
-            : '<div class="question-item placeholder">' +
-                '<p>📥</p>' +
-              '</div>';
-
-    myQuestions.forEach(function(q) {
-        if (!q.closed) {
-            list.appendChild(
-                createQuestionCard(q)
-            );
-        }
-    });
-
-    if (currentUser && currentUser.isAdmin) {
-        allQuestions
-            .filter(function(q) {
-                return !q.closed;
-            })
-            .forEach(function(q) {
-                adminList.appendChild(
-                    createQuestionCard(q)
-                );
-            });
-    }
-}
-
-function createQuestionCard(q) {
-    const card =
-        document.createElement('div');
-
-    card.className = 'question-item';
-
-    if (q.isUrgent) {
-        card.classList.add('urgent');
-    }
-
-    if (q.closed) {
-        card.classList.add('closed');
-    }
-
-    const statusClass =
-        q.closed
-            ? 'status-closed'
-            : (
-                q.answer ||
-                (q.answers &&
-                 q.answers.length > 0)
-                    ? 'status-answered'
-                    : 'status-open'
-            );
-
-    const statusText =
-        q.closed
-            ? '✅'
-            : (
-                q.answer ||
-                (q.answers &&
-                 q.answers.length > 0)
-                    ? '💬'
-                    : '⏳'
-            );
-
-    card.innerHTML =
-        '<div class="question-row">' +
-            '<div class="question-title">' +
-                escapeHtml(q.title) +
-            '</div>' +
-            '<span class="status ' +
-                statusClass +
-            '">' +
-                statusText +
-            '</span>' +
-        '</div>' +
-
-        '<div class="question-details">' +
-            escapeHtml(q.author) +
-            ' • ' +
-            q.date +
-        '</div>';
-
-    card.onclick = function() {
-        openQuestionView(q.id);
-    };
-
-    return card;
-}
-
-function showNewQuestionModal() {
     if (!currentUser) {
-        alert('⚠️ Войдите');
+        return;
+    }
+
+    const username =
+        document.getElementById(
+            'profile-username'
+        );
+
+    if (username) {
+        username.textContent =
+            currentUser.username;
+    }
+
+    const email =
+        document.getElementById(
+            'profile-email'
+        );
+
+    if (email) {
+        email.textContent =
+            currentUser.email || '';
+    }
+
+    const rank =
+        document.getElementById(
+            'profile-rank'
+        );
+
+    if (rank) {
+        rank.textContent =
+            currentUser.rank || 'Игрок';
+    }
+
+    const createdAt =
+        document.getElementById(
+            'profile-created'
+        );
+
+    if (createdAt) {
+        createdAt.textContent =
+            formatDate(
+                currentUser.createdAt
+            );
+    }
+
+    const deleteButton =
+        document.getElementById(
+            'delete-account-btn'
+        );
+
+    if (deleteButton) {
+        deleteButton.style.display =
+            currentUser
+                ? ''
+                : 'none';
+    }
+}
+
+
+// ============================================================
+// ПРОВЕРКА АВТОРИЗАЦИИ
+// ============================================================
+
+function requireAuth() {
+    if (!currentUser) {
+        showNotification(
+            'Сначала необходимо войти в аккаунт.',
+            'error'
+        );
+
         navigateTo('auth');
-        return;
+
+        return false;
     }
 
-    document.getElementById(
-        'new-question-modal'
-    ).classList.add('show');
+    return true;
 }
 
-function closeModal() {
-    document.getElementById(
-        'new-question-modal'
-    ).classList.remove('show');
-}
 
-function handleQuestionSubmit(e) {
-    e.preventDefault();
+// ============================================================
+// ПРОВЕРКА АДМИН ДОСТУПА
+// ============================================================
 
-    const title =
-        document.getElementById(
-            'question-title'
-        ).value.trim();
-
-    const category =
-        document.getElementById(
-            'question-category'
-        ).value;
-
-    const text =
-        document.getElementById(
-            'question-text'
-        ).value.trim();
-
-    if (!currentUser) return;
-
-    questions.push({
-        id: Date.now(),
-        author: currentUser.username,
-        title: title,
-        category: category,
-        text: text,
-        date: new Date().toLocaleString(),
-        answer: null,
-        answerBy: null,
-        answers: [],
-        isUrgent: category === 'password',
-        closed: false
-    });
-
-    localStorage.setItem(
-        'cristalhills_questions',
-        JSON.stringify(questions)
-    );
-
-    closeModal();
-    renderQuestions();
-}
-
-function openQuestionView(id) {
-    const q =
-        questions.find(function(x) {
-            return x.id === id;
-        });
-
-    if (!q) return;
-
-    document.getElementById(
-        'view-question-title'
-    ).textContent = q.title;
-
-    document.getElementById(
-        'view-question-author'
-    ).textContent = q.author;
-
-    document.getElementById(
-        'view-question-date'
-    ).textContent = q.date;
-
-    document.getElementById(
-        'view-question-category'
-    ).textContent =
-        getCategoryName(q.category);
-
-    document.getElementById(
-        'view-question-text'
-    ).textContent = q.text;
-
-    document.getElementById(
-        'view-question-status-badge'
-    ).classList.toggle(
-        'show',
-        q.isUrgent
-    );
-
-    const answersList =
-        document.getElementById(
-            'view-question-answers'
+function requireAdmin() {
+    if (!currentUser) {
+        showNotification(
+            'Необходимо войти в аккаунт.',
+            'error'
         );
 
-    answersList.innerHTML = '';
+        navigateTo('auth');
 
-    if (
-        q.answers &&
-        q.answers.length > 0
-    ) {
-        q.answers.forEach(function(ans) {
-            const div =
-                document.createElement('div');
-
-            div.className = 'answer-item';
-
-            div.innerHTML =
-                '<div class="answer-meta">' +
-                    escapeHtml(ans.by) +
-                '</div>' +
-                '<div>' +
-                    escapeHtml(ans.text) +
-                '</div>';
-
-            answersList.appendChild(div);
-        });
-    }
-    else if (q.answer) {
-        const div =
-            document.createElement('div');
-
-        div.className = 'answer-item';
-
-        div.innerHTML =
-            '<div class="answer-meta">' +
-                escapeHtml(
-                    q.answerBy || 'Админ'
-                ) +
-            '</div>' +
-
-            '<div>' +
-                escapeHtml(q.answer) +
-            '</div>';
-
-        answersList.appendChild(div);
-    }
-    else {
-        answersList.innerHTML =
-            '<p class="no-answer">⏳</p>';
+        return false;
     }
 
-    const answerForm =
-        document.getElementById(
-            'admin-answer-form'
+    if (!canAccessAdmin()) {
+        showNotification(
+            'У вас нет доступа к панели администратора.',
+            'error'
         );
 
-    const playerComplete =
-        document.getElementById(
-            'player-complete-section'
+        navigateTo('home');
+
+        return false;
+    }
+
+    return true;
+}
+
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+
+document.addEventListener(
+    'DOMContentLoaded',
+    async () => {
+        console.log(
+            'Cristalhills запускается...'
         );
 
-    if (
-        currentUser &&
-        currentUser.isAdmin
-    ) {
-        answerForm.style.display = 'block';
-        playerComplete.style.display = 'none';
-    }
-    else if (
-        currentUser &&
-        q.author === currentUser.username &&
-        !q.closed
-    ) {
-        answerForm.style.display = 'none';
-        playerComplete.style.display = 'block';
-    }
-    else {
-        answerForm.style.display = 'none';
-        playerComplete.style.display = 'none';
-    }
+        if (!supabaseClient) {
+            console.error(
+                'Supabase client не создан.'
+            );
 
-    document.getElementById(
-        'view-question-modal'
-    ).classList.add('show');
+            showNotification(
+                'Ошибка подключения к Supabase.',
+                'error'
+            );
 
-    window.currentViewQuestionId = id;
-}
+            return;
+        }
 
-function closeViewModal() {
-    document.getElementById(
-        'view-question-modal'
-    ).classList.remove('show');
+        setupNavigation();
 
-    renderQuestions();
-}
+        setupForms();
 
-function submitAnswer() {
-    const text =
-        document.getElementById(
-            'answer-text'
-        ).value.trim();
+        await loadCurrentUser();
 
-    const id =
-        window.currentViewQuestionId;
+        await loadServers();
 
-    if (!text || !id) return;
+        await loadQuestions();
 
-    const q =
-        questions.find(function(x) {
-            return x.id === id;
-        });
+        if (currentUser) {
+            await loadUsers();
+        }
 
-    if (!q) return;
-
-    if (!q.answers) {
-        q.answers = [];
-    }
-
-    q.answers.push({
-        text: text,
-        by: currentUser.username,
-        date: new Date().toLocaleString()
-    });
-
-    localStorage.setItem(
-        'cristalhills_questions',
-        JSON.stringify(questions)
-    );
-
-    document.getElementById(
-        'answer-text'
-    ).value = '';
-
-    openQuestionView(id);
-}
-
-function completeQuestion() {
-    const id =
-        window.currentViewQuestionId;
-
-    if (!id) return;
-
-    const q =
-        questions.find(function(x) {
-            return x.id === id;
-        });
-
-    if (!q) return;
-
-    q.closed = true;
-
-    localStorage.setItem(
-        'cristalhills_questions',
-        JSON.stringify(questions)
-    );
-
-    closeViewModal();
-}
-
-function playerCompleteQuestion() {
-    const id =
-        window.currentViewQuestionId;
-
-    if (!id) return;
-
-    const q =
-        questions.find(function(x) {
-            return x.id === id;
-        });
-
-    if (
-        !q ||
-        q.author !== currentUser.username
-    ) {
-        return;
-    }
-
-    q.closed = true;
-
-    localStorage.setItem(
-        'cristalhills_questions',
-        JSON.stringify(questions)
-    );
-
-    closeViewModal();
-}
-
-function showForgotPassword() {
-    document.getElementById(
-        'forgot-card'
-    ).style.display = 'block';
-
-    document.querySelector(
-        '#auth-page .auth-card:first-of-type'
-    ).style.display = 'none';
-
-    document.getElementById(
-        'register-card'
-    ).style.display = 'none';
-}
-
-function showRegister() {
-    document.getElementById(
-        'register-card'
-    ).style.display = 'block';
-
-    document.querySelector(
-        '#auth-page .auth-card:first-of-type'
-    ).style.display = 'none';
-
-    document.getElementById(
-        'forgot-card'
-    ).style.display = 'none';
-}
-
-function showLogin() {
-    document.getElementById(
-        'register-card'
-    ).style.display = 'none';
-
-    document.getElementById(
-        'forgot-card'
-    ).style.display = 'none';
-
-    document.querySelector(
-        '#auth-page .auth-card:first-of-type'
-    ).style.display = 'block';
-}
-
-function changePassword() {
-    if (!currentUser) return;
-
-    const newPass =
-        prompt('🔑 Новый пароль:');
-
-    if (
-        !newPass ||
-        newPass.length < 4
-    ) {
-        return;
-    }
-
-    const idx =
-        users.findIndex(function(u) {
-            return u.username ===
-                   currentUser.username;
-        });
-
-    if (idx !== -1) {
-        users[idx].password = newPass;
-        currentUser.password = newPass;
-
-        localStorage.setItem(
-            'cristalhills_users',
-            JSON.stringify(users)
+        loadServer(
+            currentServerIndex
         );
 
-        localStorage.setItem(
-            'cristalhills_current',
-            JSON.stringify(currentUser)
+        renderServersPage();
+
+        updateUI();
+
+        setupRealtime();
+
+        console.log(
+            'Cristalhills успешно запущен.'
         );
-
-        alert('✅');
     }
-}
-
-function deleteAccount() {
-    if (
-        !currentUser ||
-        currentUser.isAdmin
-    ) {
-        return;
-    }
-
-    if (!confirm('⚠️')) return;
-
-    users =
-        users.filter(function(u) {
-            return u.username !==
-                   currentUser.username;
-        });
-
-    localStorage.setItem(
-        'cristalhills_users',
-        JSON.stringify(users)
-    );
-
-    logout();
-}
-
-function escapeHtml(text) {
-    const div =
-        document.createElement('div');
-
-    div.textContent = text;
-
-    return div.innerHTML;
-}
-
-function getCategoryName(cat) {
-    const map = {
-        technical: '🔧',
-        gameplay: '🎮',
-        donation: '💎',
-        other: '❓',
-        password: '🔑'
-    };
-
-    return map[cat] || cat;
-}
-
-function copyIP(ip) {
-    navigator.clipboard.writeText(ip)
-        .then(function() {
-            const msg =
-                document.getElementById(
-                    'ip-copy-msg'
-                );
-
-            msg.textContent =
-                '✅ IP скопирован: ' + ip;
-
-            setTimeout(function() {
-                msg.textContent = '';
-            }, 4000);
-        });
-}
+);
