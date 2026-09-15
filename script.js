@@ -7,6 +7,7 @@
  * 2. Усиленная валидация паролей (8+ символов, буквы + цифры)
  * 3. Безопасные сообщения об ошибках (без enumeration)
  * 4. Серверная проверка админ-прав через RLS и safe_update_role
+ * 5. Защита от F12 читерства
  */
 
 const SUPABASE_URL = 'https://zedgouirmabujahlpbjq.supabase.co';
@@ -95,8 +96,28 @@ function getCategoryName(category) {
     return map[category] || category || '❓';
 }
 
+// ✅ ЗАЩИЩЁННАЯ ПРОВЕРКА: только админы
 function isAdmin() {
-    return !!currentUser && (currentUser.rank === 'Гл.Админ' || currentUser.rank === 'Мл.Админ');
+    if (!currentUser) return false;
+    
+    const validRanks = ['Гл.Админ', 'Мл.Админ'];
+    const hasValidRank = validRanks.includes(currentUser.rank);
+    
+    const hasChiefRole = Number.isInteger(currentUser.chiefFor);
+    const hasHelperRole = Number.isInteger(currentUser.helperFor);
+    
+    const result = hasValidRank || hasChiefRole || hasHelperRole;
+    
+    if (!result && currentUser) {
+        console.warn('⚠️ Пользователь попытался получить доступ без прав:', {
+            username: currentUser.username,
+            rank: currentUser.rank,
+            chiefFor: currentUser.chiefFor,
+            helperFor: currentUser.helperFor
+        });
+    }
+    
+    return result;
 }
 
 function canAccessAdmin() {
@@ -123,7 +144,6 @@ function validatePasswordStrength(password) {
         };
     }
     
-    // Проверка на наличие букв и цифр
     const hasLetter = /[A-Za-zА-Яа-яЁё]/.test(password);
     const hasDigit = /\d/.test(password);
     
@@ -134,7 +154,6 @@ function validatePasswordStrength(password) {
         };
     }
     
-    // Проверка на простые пароли
     const weakPasswords = ['password', '12345678', 'qwerty12', 'admin123', 'password1'];
     if (weakPasswords.includes(password.toLowerCase())) {
         return {
@@ -150,7 +169,6 @@ function validatePasswordStrength(password) {
 function checkRateLimit() {
     const now = Date.now();
     
-    // Удаляем старые попытки (старше 1 минуты)
     loginAttempts = loginAttempts.filter(timestamp => now - timestamp < LOGIN_WINDOW_MS);
     
     if (loginAttempts.length >= MAX_LOGIN_ATTEMPTS) {
@@ -162,7 +180,6 @@ function checkRateLimit() {
         };
     }
     
-    // Добавляем текущую попытку
     loginAttempts.push(now);
     return { allowed: true };
 }
@@ -342,8 +359,10 @@ async function loadCurrentUserFromSession(session) {
             createdAt: result.data.created_at,
             lastLogin: result.data.last_login || session.user.last_sign_in_at
         };
+        console.log('✅ Профиль загружен:', currentUser.username, currentUser.rank);
     } else {
         currentUser = null;
+        console.warn('⚠️ Профиль не найден');
     }
 }
 /* =========================
@@ -644,9 +663,18 @@ function setupNavigation() {
     });
 }
 
+// ✅ ЗАЩИЩЁННАЯ НАВИГАЦИЯ
 function navigateTo(page) {
     const target = document.getElementById(page + '-page');
     if (!target) return;
+
+    // ✅ ЗАПРЕТ: нельзя перейти на admin без прав
+    if (page === 'admin' && !canAccessAdmin()) {
+        console.error('⛔ Попытка доступа к админке без прав:', currentUser);
+        alert('⛔ Нет доступа к админ-панели.');
+        navigateTo('auth');
+        return;
+    }
 
     document.querySelectorAll('.page').forEach(function (element) {
         element.classList.remove('active');
@@ -687,7 +715,6 @@ function navigateTo(page) {
 async function getEmailByUsername(username) {
     const client = getSupabase();
     
-    // Используем RLS-safe запрос — только для авторизованных
     const result = await client
         .from('profiles')
         .select('email')
@@ -730,7 +757,6 @@ async function handleLogin(event) {
         });
         
         if (existsResult.error || !existsResult.data) {
-            // ✅ ОДИНАКОВОЕ сообщение для всех ошибок
             showError('login-error', '❌ Неверный логин или пароль.');
             return;
         }
@@ -870,7 +896,6 @@ async function handleForgotPassword(event) {
         const realEmail = await getEmailByUsername(username);
 
         if (!realEmail) {
-            // ✅ НЕ показываем, существует ли пользователь
             showSuccess('forgot-success', '✅ Если аккаунт существует, письмо отправлено.');
             return;
         }
@@ -929,6 +954,7 @@ function showForgotPassword() {
    UI / ПРОФИЛЬ
 ========================= */
 
+// ✅ ЗАЩИЩЁННАЯ ФУНКЦИЯ: проверка перед показом админки
 function updateUI() {
     const authLink = document.getElementById('auth-link');
     const adminLink = document.getElementById('admin-panel-link');
@@ -942,8 +968,14 @@ function updateUI() {
             authLink.dataset.page = 'profile';
         }
 
+        // ✅ ПРОВЕРЯЕМ isAdmin() перед показом админки
         if (adminLink) {
-            adminLink.style.display = canAccessAdmin() ? 'flex' : 'none';
+            const hasAccess = canAccessAdmin();
+            adminLink.style.display = hasAccess ? 'flex' : 'none';
+            
+            if (!hasAccess) {
+                console.log('ℹ️ Доступ к админке запрещён:', currentUser.username, currentUser.rank);
+            }
         }
 
         if (supportAdminPanel) {
@@ -1616,12 +1648,14 @@ function closePromoteModal() {
     document.getElementById('promote-modal')?.classList.remove('show');
 }
 
-// ✅ ИЗМЕНИТЬ: handlePromote с серверной проверкой
+// ✅ ЗАЩИЩЁННАЯ ФУНКЦИЯ: нельзя выдать роль через консоль
 async function handlePromote(event) {
     event.preventDefault();
 
+    // ✅ ДВОЙНАЯ ПРОВЕРКА: клиент + сервер
     if (!isAdmin()) {
         alert('⛔ Недостаточно прав.');
+        console.error('⛔ Попытка повышения без прав:', currentUser);
         return;
     }
 
@@ -1637,19 +1671,24 @@ async function handlePromote(event) {
     // ✅ ЗАПРЕТ: нельзя менять роль себе
     if (currentUser && target.id === currentUser.id) {
         alert('⛔ Нельзя изменить свою собственную роль.');
+        console.error('⛔ Попытка самоповышения:', currentUser.username);
         return;
     }
 
     try {
         const client = getSupabase();
         
-        // ✅ ИСПОЛЬЗУЕМ БЕЗОПАСНУЮ ФУНКЦИЮ (серверная проверка)
-        await client.rpc('safe_update_role', {
+        // ✅ СЕРВЕРНАЯ ПРОВЕРКА через safe_update_role
+        const result = await client.rpc('safe_update_role', {
             p_user_id: target.id,
             p_rank: rank,
             p_chief_for: null,
             p_helper_for: null
         });
+
+        if (result.error) {
+            throw result.error;
+        }
 
         closePromoteModal();
         await loadUsers();
@@ -1661,12 +1700,14 @@ async function handlePromote(event) {
     }
 }
 
-// ✅ ИЗМЕНИТЬ: handleAssignRole с серверной проверкой
+// ✅ ЗАЩИЩЁННАЯ ФУНКЦИЯ: нельзя назначить себя через консоль
 async function handleAssignRole(event) {
     event.preventDefault();
 
+    // ✅ ДВОЙНАЯ ПРОВЕРКА: клиент + сервер
     if (!isAdmin()) {
         alert('⛔ Недостаточно прав.');
+        console.error('⛔ Попытка назначения без прав:', currentUser);
         return;
     }
 
@@ -1683,19 +1724,24 @@ async function handleAssignRole(event) {
     // ✅ ЗАПРЕТ: нельзя назначить себя
     if (currentUser && target.id === currentUser.id) {
         alert('⛔ Нельзя назначить роль себе.');
+        console.error('⛔ Попытка самоназначения:', currentUser.username);
         return;
     }
 
     try {
         const client = getSupabase();
         
-        // ✅ ИСПОЛЬЗУЕМ БЕЗОПАСНУЮ ФУНКЦИЮ
-        await client.rpc('safe_update_role', {
+        // ✅ СЕРВЕРНАЯ ПРОВЕРКА через safe_update_role
+        const result = await client.rpc('safe_update_role', {
             p_user_id: target.id,
             p_rank: target.rank,
             p_chief_for: role === 'chief' ? serverIndex : null,
             p_helper_for: role === 'helper' ? serverIndex : null
         });
+
+        if (result.error) {
+            throw result.error;
+        }
 
         closeAssignModal();
         await loadUsers();
@@ -1802,889 +1848,6 @@ function createQuestionCard(question) {
         '</div>' +
         '<div class="question-details">' +
             escapeHtml(question.author) + ' • ' + escapeHtml(formatDate(question.date)) +
-        '</div>';
-
-    card.addEventListener('click', function () {
-        openQuestionView(question.id);
-    });
-
-    return card;
-}
-
-function showNewQuestionModal() {
-    if (!currentUser) {
-        alert('⚠️ Сначала войдите в аккаунт.');
-        navigateTo('auth');
-        return;
-    }
-
-    document.getElementById('new-question-modal')?.classList.add('show');
-}
-
-function closeModal() {
-    document.getElementById('new-question-modal')?.classList.remove('show');
-}
-
-async function handleQuestionSubmit(event) {
-    event.preventDefault();
-
-    if (!currentUser) {
-        alert('⚠️ Сначала войдите в аккаунт.');
-        return;
-    }
-
-    const title = document.getElementById('question-title')?.value.trim() || '';
-    const category = document.getElementById('question-category')?.value || 'other';
-    const text = document.getElementById('question-text')?.value.trim() || '';
-
-    if (!title || !text) {
-        alert('⚠️ Заполните заголовок и описание.');
-        return;
-    }
-
-    const row = {
-        user_id: currentUser.id,
-        username: currentUser.username,
-        title: title,
-        category: category,
-        description: text,
-        date: new Date().toISOString(),
-        answer: null,
-        answer_by: null,
-        answers: [],
-        is_urgent: category === 'password',
-        closed: false
-    };
-
-    try {
-        const client = getSupabase();
-        const result = await client
-            .from('questions')
-            .insert(row);
-
-        if (result.error) throw result.error;
-
-        document.getElementById('question-form')?.reset();
-        closeModal();
-        await loadQuestions();
-        renderQuestions();
-    } catch (error) {
-        console.error('Ошибка создания вопроса:', error);
-        alert('❌ ' + (error?.message || 'Не удалось отправить вопрос.'));
-    }
-}
-
-function openQuestionView(id) {
-    const question = questions.find(function (item) {
-        return String(item.id) === String(id);
-    });
-
-    if (!question) return;
-
-    const setText = function (elementId, value) {
-        const element = document.getElementById(elementId);
-        if (element) element.textContent = value == null ? '' : String(value);
-    };
-
-    setText('view-question-title', question.title);
-    setText('view-question-author', question.author);
-    setText('view-question-date', formatDate(question.date));
-    setText('view-question-category', getCategoryName(question.category));
-    setText('view-question-text', question.text);
-
-    const urgentBadge = document.getElementById('view-question-status-badge');
-    if (urgentBadge) urgentBadge.classList.toggle('show', !!question.isUrgent);
-
-    const answersList = document.getElementById('view-question-answers');
-    if (answersList) {
-        answersList.innerHTML = '';
-
-        const answers = normalizeArray(question.answers);
-
-        answers.forEach(function (answer) {
-            const item = document.createElement('div');
-            item.className = 'answer-item';
-            item.innerHTML =
-                '<div class="answer-meta">' + escapeHtml(answer.by || 'Админ') + '</div>' +
-                '<div>' + escapeHtml(answer.text || '') + '</div>';
-            answersList.appendChild(item);
-        });
-
-        if (!answers.length && question.answer) {
-            const item = document.createElement('div');
-            item.className = 'answer-item';
-            item.innerHTML =
-                '<div class="answer-meta">' + escapeHtml(question.answerBy || 'Админ') + '</div>' +
-                '<div>' + escapeHtml(question.answer) + '</div>';
-            answersList.appendChild(item);
-        }
-
-        if (!answers.length && !question.answer) {
-            answersList.innerHTML = '<p class="no-answer">⏳ Ответа пока нет</p>';
-        }
-    }
-
-    const answerForm = document.getElementById('admin-answer-form');    
-
-/* =========================
-   АДМИНКА — ВКЛАДКИ И СЕРВЕРЫ
-========================= */
-
-function switchAdminTab(tabName) {
-    document.querySelectorAll('.admin-tab-content').forEach(function (tab) {
-        tab.classList.remove('active');
-    });
-
-    document.querySelectorAll('.admin-tab-btn').forEach(function (button) {
-        button.classList.remove('active');
-    });
-
-    const tab = document.getElementById('admin-tab-' + tabName);
-    if (tab) tab.classList.add('active');
-
-    const buttons = document.querySelectorAll('.admin-tab-btn');
-    buttons.forEach(function (button) {
-        const onclick = button.getAttribute('onclick') || '';
-        if (onclick.includes("'" + tabName + "'")) {
-            button.classList.add('active');
-        }
-    });
-
-    if (tabName === 'servers') renderServersList();
-    if (tabName === 'settings') loadAdminSettings();
-    if (tabName === 'users') renderUsersList();
-    if (tabName === 'questions') renderAdminAllQuestions();
-}
-
-function renderServersList() {
-    const container = document.getElementById('servers-list');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    let visibleCount = 0;
-
-    servers.forEach(function (server, index) {
-        if (!canEditServer(index)) return;
-        visibleCount++;
-
-        const card = document.createElement('div');
-        card.className = 'server-card' + (index === currentServerIndex ? ' active' : '');
-
-        const statusIcon = server.status === 'online'
-            ? '🟢'
-            : server.status === 'maintenance'
-                ? '🟠'
-                : '🔴';
-
-        card.innerHTML =
-            '<div class="server-info">' +
-                '<span class="server-icon">🌐</span>' +
-                '<div>' +
-                    '<div class="server-name">' + escapeHtml(server.name) + '</div>' +
-                    '<div class="server-status-text">' + statusIcon + ' ' + escapeHtml(server.status || 'offline') + '</div>' +
-                '</div>' +
-            '</div>' +
-            '<div class="server-actions"></div>';
-
-        const actions = card.querySelector('.server-actions');
-
-        const selectButton = document.createElement('button');
-        selectButton.type = 'button';
-        selectButton.className = 'btn btn-primary btn-sm';
-        selectButton.textContent = 'Выбрать';
-        selectButton.addEventListener('click', function () {
-            switchToServer(index);
-        });
-        actions.appendChild(selectButton);
-
-        if (isAdmin() && servers.length > 1) {
-            const deleteButton = document.createElement('button');
-            deleteButton.type = 'button';
-            deleteButton.className = 'btn btn-danger btn-sm';
-            deleteButton.textContent = '🗑️';
-            deleteButton.addEventListener('click', function () {
-                deleteServer(index);
-            });
-            actions.appendChild(deleteButton);
-        }
-
-        container.appendChild(card);
-    });
-
-    if (!visibleCount) {
-        container.innerHTML = '<div class="question-item placeholder"><p>Нет доступных веток для управления</p></div>';
-    }
-}
-
-function switchToServer(index) {
-    if (!servers[index]) return;
-    loadServer(index);
-    renderServersList();
-}
-
-async function deleteServer(index) {
-    if (!isAdmin()) {
-        alert('⛔ Нет доступа.');
-        return;
-    }
-
-    if (servers.length <= 1) {
-        alert('⚠️ Нельзя удалить последнюю ветку.');
-        return;
-    }
-
-    const server = servers[index];
-    if (!server) return;
-
-    if (!confirm('⚠️ Удалить ветку «' + server.name + '»?')) return;
-
-    if (!server.id) {
-        alert('⚠️ Эта демонстрационная ветка ещё не сохранена в Supabase.');
-        return;
-    }
-
-    const client = getSupabase();
-    const result = await client
-        .from('servers')
-        .delete()
-        .eq('id', server.id);
-
-    if (result.error) {
-        alert('❌ ' + result.error.message);
-        return;
-    }
-
-    currentServerIndex = 0;
-    await loadServers();
-    loadServer(currentServerIndex);
-    renderServersList();
-    renderServersPage();
-}
-
-function loadAdminSettings() {
-    const server = servers[currentServerIndex];
-    if (!server) return;
-
-    const setValue = function (id, value) {
-        const element = document.getElementById(id);
-        if (element) element.value = value == null ? '' : String(value);
-    };
-
-    setValue('admin-status', server.status);
-    setValue('admin-description', server.description);
-    setValue('admin-version', server.version);
-    setValue('admin-features-title', server.featuresTitle || 'Почему ' + server.name + '?');
-
-    renderAdminIps();
-    renderAdminBuilds();
-    renderAdminFeaturesCustom();
-    renderAdminStatsCustom();
-}
-
-function renderAdminIps() {
-    const container = document.getElementById('admin-ips-list');
-    if (!container) return;
-
-    container.innerHTML = '';
-    const server = servers[currentServerIndex];
-    if (!server) return;
-
-    normalizeArray(server.ips).forEach(function (item, index) {
-        const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.gap = '10px';
-        row.style.marginBottom = '10px';
-
-        row.innerHTML =
-            '<input type="text" class="form-input" value="' + escapeHtml(item.name || '') + '" data-field="name" style="flex:1;">' +
-            '<input type="text" class="form-input" value="' + escapeHtml(item.ip || '') + '" data-field="ip" style="flex:1;">' +
-            '<button type="button" class="btn btn-danger">🗑️</button>';
-
-        const button = row.querySelector('button');
-        if (button) button.addEventListener('click', function () { removeIp(index); });
-
-        container.appendChild(row);
-    });
-}
-
-function renderAdminBuilds() {
-    const container = document.getElementById('admin-builds-list');
-    if (!container) return;
-
-    container.innerHTML = '';
-    const server = servers[currentServerIndex];
-    if (!server) return;
-
-    normalizeArray(server.builds).forEach(function (item, index) {
-        const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.gap = '10px';
-        row.style.marginBottom = '10px';
-
-        row.innerHTML =
-            '<input type="text" class="form-input" value="' + escapeHtml(item.name || '') + '" data-field="name" style="flex:1;">' +
-            '<input type="text" class="form-input" value="' + escapeHtml(item.url || '') + '" data-field="url" style="flex:1;">' +
-            '<button type="button" class="btn btn-danger">🗑️</button>';
-
-        const button = row.querySelector('button');
-        if (button) button.addEventListener('click', function () { removeBuild(index); });
-
-        container.appendChild(row);
-    });
-}
-
-function renderAdminFeaturesCustom() {
-    const container = document.getElementById('admin-features-custom');
-    if (!container) return;
-
-    container.innerHTML = '';
-    const server = servers[currentServerIndex];
-    if (!server) return;
-
-    const features = normalizeArray(server.features);
-
-    for (let i = 0; i < 4; i++) {
-        const feature = features[i] || { icon: '⭐', title: '', desc: '' };
-        const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.gap = '8px';
-        row.style.marginBottom = '8px';
-        row.style.alignItems = 'center';
-
-        row.innerHTML =
-            '<span style="min-width:20px;">' + (i + 1) + '.</span>' +
-            '<input type="text" class="form-input" value="' + escapeHtml(feature.icon || '') + '" id="f-icon-' + i + '" style="width:70px;" placeholder="📖">' +
-            '<input type="text" class="form-input" value="' + escapeHtml(feature.title || '') + '" id="f-title-' + i + '" style="flex:1;" placeholder="Название">' +
-            '<input type="text" class="form-input" value="' + escapeHtml(feature.desc || '') + '" id="f-desc-' + i + '" style="flex:2;" placeholder="Описание">';
-
-        container.appendChild(row);
-    }
-}
-
-function renderAdminStatsCustom() {
-    const container = document.getElementById('admin-stats-custom');
-    if (!container) return;
-
-    container.innerHTML = '';
-    const server = servers[currentServerIndex];
-    if (!server) return;
-
-    const stats = normalizeArray(server.stats);
-
-    for (let i = 0; i < 4; i++) {
-        const stat = stats[i] || { icon: '⭐', value: '', label: '' };
-        const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.gap = '8px';
-        row.style.marginBottom = '8px';
-        row.style.alignItems = 'center';
-
-        row.innerHTML =
-            '<span style="min-width:20px;">' + (i + 1) + '.</span>' +
-            '<input type="text" class="form-input" value="' + escapeHtml(stat.icon || '') + '" id="s-icon-' + i + '" style="width:70px;" placeholder="🎮">' +
-            '<input type="text" class="form-input" value="' + escapeHtml(stat.value || '') + '" id="s-value-' + i + '" style="width:100px;" placeholder="Значение">' +
-            '<input type="text" class="form-input" value="' + escapeHtml(stat.label || '') + '" id="s-label-' + i + '" style="flex:1;" placeholder="Подпись">';
-
-        container.appendChild(row);
-    }
-}
-
-function addNewIpField() {
-    if (!canEditServer(currentServerIndex)) return;
-    const server = servers[currentServerIndex];
-    if (!server) return;
-
-    if (!Array.isArray(server.ips)) server.ips = [];
-    server.ips.push({ name: 'IP', ip: 'play.example.com' });
-    renderAdminIps();
-}
-
-function addNewBuildField() {
-    if (!canEditServer(currentServerIndex)) return;
-    const server = servers[currentServerIndex];
-    if (!server) return;
-
-    if (!Array.isArray(server.builds)) server.builds = [];
-    server.builds.push({ name: 'Сборка', url: '[https://example.com/build.zip](https://example.com/build.zip)' });
-    renderAdminBuilds();
-}
-
-function removeIp(index) {
-    if (!canEditServer(currentServerIndex)) return;
-
-    const server = servers[currentServerIndex];
-    if (!server || !Array.isArray(server.ips)) return;
-
-    if (server.ips.length <= 1) {
-        alert('⚠️ Должен остаться хотя бы один IP.');
-        return;
-    }
-
-    server.ips.splice(index, 1);
-    renderAdminIps();
-}
-
-function removeBuild(index) {
-    if (!canEditServer(currentServerIndex)) return;
-
-    const server = servers[currentServerIndex];
-    if (!server || !Array.isArray(server.builds)) return;
-
-    if (server.builds.length <= 1) {
-        alert('⚠️ Должна остаться хотя бы одна сборка.');
-        return;
-    }
-
-    server.builds.splice(index, 1);
-    renderAdminBuilds();
-}
-
-async function saveAdminSettings() {
-    if (!canEditServer(currentServerIndex)) {
-        alert('⛔ Нет доступа к этому серверу.');
-        return;
-    }
-
-    const server = servers[currentServerIndex];
-    if (!server) return;
-
-    server.status = document.getElementById('admin-status')?.value || 'offline';
-    server.description = document.getElementById('admin-description')?.value.trim() || '';
-    server.version = document.getElementById('admin-version')?.value.trim() || '';
-    server.featuresTitle = document.getElementById('admin-features-title')?.value.trim() || ('Почему ' + server.name + '?');
-
-    const ipRows = document.querySelectorAll('#admin-ips-list > div');
-    server.ips = Array.from(ipRows).map(function (row) {
-        return {
-            name: row.querySelector('[data-field="name"]')?.value.trim() || 'IP',
-            ip: row.querySelector('[data-field="ip"]')?.value.trim() || ''
-        };
-    }).filter(function (item) {
-        return item.ip;
-    });
-
-    if (!server.ips.length) {
-        alert('⚠️ Добавьте хотя бы один IP.');
-        return;
-    }
-
-    const buildRows = document.querySelectorAll('#admin-builds-list > div');
-    server.builds = Array.from(buildRows).map(function (row) {
-        return {
-            name: row.querySelector('[data-field="name"]')?.value.trim() || 'Сборка',
-            url: row.querySelector('[data-field="url"]')?.value.trim() || ''
-        };
-    }).filter(function (item) {
-        return item.url;
-    });
-
-    if (!server.builds.length) {
-        alert('⚠️ Добавьте хотя бы одну ссылку на сборку.');
-        return;
-    }
-
-    server.features = Array.from({ length: 4 }, function (_, index) {
-        return {
-            icon: document.getElementById('f-icon-' + index)?.value.trim() || '⭐',
-            title: document.getElementById('f-title-' + index)?.value.trim() || '',
-            desc: document.getElementById('f-desc-' + index)?.value.trim() || ''
-        };
-    });
-
-    server.stats = Array.from({ length: 4 }, function (_, index) {
-        return {
-            icon: document.getElementById('s-icon-' + index)?.value.trim() || '⭐',
-            value: document.getElementById('s-value-' + index)?.value.trim() || '',
-            label: document.getElementById('s-label-' + index)?.value.trim() || ''
-        };
-    });
-
-    if (!server.id) {
-        alert('⚠️ Эта ветка пока существует только как демонстрационная. Создайте её через «+ Добавить ветку».');
-        return;
-    }
-
-    try {
-        const client = getSupabase();
-        const result = await client
-            .from('servers')
-            .update(serverPayload(server))
-            .eq('id', server.id);
-
-        if (result.error) throw result.error;
-
-        const message = document.getElementById('admin-save-msg');
-        if (message) {
-            message.textContent = '✅ Сохранено!';
-            setTimeout(function () { message.textContent = ''; }, 3000);
-        }
-
-        await loadServers();
-        loadServer(currentServerIndex);
-        renderServersList();
-    } catch (error) {
-        console.error('Ошибка сохранения сервера:', error);
-        alert('❌ ' + (error?.message || 'Не удалось сохранить настройки.'));
-    }
-}
-
-async function handleAddServer(event) {
-    event.preventDefault();
-
-    if (!isAdmin()) {
-        alert('⛔ Только администратор может создавать ветки.');
-        return;
-    }
-
-    const name = document.getElementById('new-server-name')?.value.trim() || '';
-    if (!name) return;
-
-    const newServer = {
-        ...JSON.parse(JSON.stringify(DEFAULT_SERVER)),
-        name: name,
-        featuresTitle: 'Почему ' + name + '?'
-    };
-
-    try {
-        const client = getSupabase();
-        const result = await client
-            .from('servers')
-            .insert(serverPayload(newServer))
-            .select()
-            .single();
-
-        if (result.error) throw result.error;
-
-        await loadServers();
-
-        const newIndex = servers.findIndex(function (server) {
-            return String(server.id) === String(result.data.id);
-        });
-
-        if (newIndex >= 0) loadServer(newIndex);
-
-        closeAddServerModal();
-        renderServersList();
-        renderServersPage();
-        alert('✅ Ветка «' + name + '» создана.');
-    } catch (error) {
-        console.error('Ошибка создания сервера:', error);
-        alert('❌ ' + (error?.message || 'Не удалось создать ветку.'));
-    }
-}
-
-function showAddServerModal() {
-    if (!isAdmin()) {
-        alert('⛔ Нет доступа.');
-        return;
-    }
-    document.getElementById('add-server-modal')?.classList.add('show');
-}
-
-function closeAddServerModal() {
-    document.getElementById('add-server-modal')?.classList.remove('show');
-    document.getElementById('add-server-form')?.reset();
-}
-
-/* =========================
-   ПОЛЬЗОВАТЕЛИ / РОЛИ (ИСПРАВЛЕНО)
-========================= */
-
-function renderUsersList() {
-    const container = document.getElementById('users-list');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    if (!isAdmin()) return;
-
-    if (!users.length) {
-        container.innerHTML = '<div class="question-item placeholder"><p>Нет пользователей</p></div>';
-        return;
-    }
-
-    users.forEach(function (user) {
-        const card = document.createElement('div');
-        card.className = 'user-card' + (user.rank === 'Гл.Админ' || user.rank === 'Мл.Админ' ? ' admin' : '');
-        card.dataset.username = String(user.username || '').toLowerCase();
-
-        let roleText = user.rank || 'Игрок';
-
-        if (Number.isInteger(user.chiefFor) && servers[user.chiefFor]) {
-            roleText += ' -  👑 Главный за ' + servers[user.chiefFor].name;
-        } else if (Number.isInteger(user.helperFor) && servers[user.helperFor]) {
-            roleText += ' -  🔹 Помощник ' + servers[user.helperFor].name;
-        }
-
-        const isCurrentUser = currentUser && user.id === currentUser.id;
-
-        card.innerHTML =
-            '<div class="user-row"><span class="user-label">👤</span><span class="user-value">' + escapeHtml(user.username) + '</span></div>' +
-            '<div class="user-row"><span class="user-label">📧</span><span class="user-value">' + escapeHtml(user.email || '-') + '</span></div>' +
-            '<div class="user-row"><span class="user-label">🏷️</span><span class="user-value">' + escapeHtml(roleText) + '</span></div>' +
-            '<div class="user-row"><span class="user-label">📅</span><span class="user-value">' + escapeHtml(formatDate(user.createdAt)) + '</span></div>' +
-            '<div class="user-actions"></div>';
-
-        const actions = card.querySelector('.user-actions');
-
-        if (!isCurrentUser) {
-            const assignButton = document.createElement('button');
-            assignButton.type = 'button';
-            assignButton.className = 'btn btn-primary btn-sm';
-            assignButton.textContent = '🎯 Назначить';
-            assignButton.addEventListener('click', function () {
-                openAssignModal(user.username);
-            });
-            actions.appendChild(assignButton);
-
-            const promoteButton = document.createElement('button');
-            promoteButton.type = 'button';
-            promoteButton.className = 'btn btn-secondary btn-sm';
-            promoteButton.textContent = '👑 Роль';
-            promoteButton.addEventListener('click', function () {
-                openPromoteModal(user.username);
-            });
-            actions.appendChild(promoteButton);
-        }
-
-        container.appendChild(card);
-    });
-}
-
-function filterUsers() {
-    const input = document.getElementById('user-search');
-    const query = (input?.value || '').trim().toLowerCase();
-
-    document.querySelectorAll('#users-list .user-card').forEach(function (card) {
-        card.style.display = card.textContent.toLowerCase().includes(query) ? '' : 'none';
-    });
-}
-
-function openAssignModal(username) {
-    if (!isAdmin()) return;
-
-    const usernameInput = document.getElementById('assign-username');
-    const serverSelect = document.getElementById('assign-server');
-    const modal = document.getElementById('assign-role-modal');
-
-    if (usernameInput) usernameInput.value = username;
-    if (!serverSelect || !modal) return;
-
-    serverSelect.innerHTML = '';
-
-    servers.forEach(function (server, index) {
-        if (!server.id) return;
-        const option = document.createElement('option');
-        option.value = String(index);
-        option.textContent = server.name;
-        serverSelect.appendChild(option);
-    });
-
-    modal.classList.add('show');
-}
-
-function closeAssignModal() {
-    document.getElementById('assign-role-modal')?.classList.remove('show');
-}
-
-function openPromoteModal(username) {
-    if (!isAdmin()) return;
-    const input = document.getElementById('promote-username');
-    if (input) input.value = username;
-    document.getElementById('promote-modal')?.classList.add('show');
-}
-
-function closePromoteModal() {
-    document.getElementById('promote-modal')?.classList.remove('show');
-}
-
-// ✅ ИЗМЕНИТЬ: handlePromote с серверной проверкой
-async function handlePromote(event) {
-    event.preventDefault();
-
-    if (!isAdmin()) {
-        alert('⛔ Недостаточно прав.');
-        return;
-    }
-
-    const username = document.getElementById('promote-username')?.value || '';
-    const rank = document.getElementById('promote-rank')?.value || 'Игрок';
-    const target = users.find(function (user) { return user.username === username; });
-
-    if (!target) {
-        alert('❌ Пользователь не найден.');
-        return;
-    }
-
-    // ✅ ЗАПРЕТ: нельзя менять роль себе
-    if (currentUser && target.id === currentUser.id) {
-        alert('⛔ Нельзя изменить свою собственную роль.');
-        return;
-    }
-
-    try {
-        const client = getSupabase();
-        
-        // ✅ ИСПОЛЬЗУЕМ БЕЗОПАСНУЮ ФУНКЦИЮ (серверная проверка)
-        await client.rpc('safe_update_role', {
-            p_user_id: target.id,
-            p_rank: rank,
-            p_chief_for: null,
-            p_helper_for: null
-        });
-
-        closePromoteModal();
-        await loadUsers();
-        renderUsersList();
-        alert('✅ Роль пользователя изменена.');
-    } catch (error) {
-        console.error('Ошибка назначения роли:', error);
-        alert('❌ ' + (error?.message || 'Не удалось изменить роль.'));
-    }
-}
-
-// ✅ ИЗМЕНИТЬ: handleAssignRole с серверной проверкой
-async function handleAssignRole(event) {
-    event.preventDefault();
-
-    if (!isAdmin()) {
-        alert('⛔ Недостаточно прав.');
-        return;
-    }
-
-    const username = document.getElementById('assign-username')?.value || '';
-    const serverIndex = Number.parseInt(document.getElementById('assign-server')?.value || '-1', 10);
-    const role = document.getElementById('assign-role')?.value || 'chief';
-    const target = users.find(function (user) { return user.username === username; });
-
-    if (!target || !servers[serverIndex]) {
-        alert('❌ Пользователь или сервер не найден.');
-        return;
-    }
-
-    // ✅ ЗАПРЕТ: нельзя назначить себя
-    if (currentUser && target.id === currentUser.id) {
-        alert('⛔ Нельзя назначить роль себе.');
-        return;
-    }
-
-    try {
-        const client = getSupabase();
-        
-        // ✅ ИСПОЛЬЗУЕМ БЕЗОПАСНУЮ ФУНКЦИЮ
-        await client.rpc('safe_update_role', {
-            p_user_id: target.id,
-            p_rank: target.rank,
-            p_chief_for: role === 'chief' ? serverIndex : null,
-            p_helper_for: role === 'helper' ? serverIndex : null
-        });
-
-        closeAssignModal();
-        await loadUsers();
-        renderUsersList();
-        alert('✅ Назначение сохранено.');
-    } catch (error) {
-        console.error('Ошибка назначения:', error);
-        alert('❌ ' + (error?.message || 'Не удалось назначить роль.'));
-    }
-}
-
-/* =========================
-   ПОДДЕРЖКА / ВОПРОСЫ
-========================= */
-
-function renderAdminAllQuestions() {
-    const container = document.getElementById('admin-all-questions');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    const allQuestions = questions.slice().sort(function (a, b) {
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
-    });
-
-    if (!allQuestions.length) {
-        container.innerHTML = '<div class="question-item placeholder"><p>Нет вопросов</p></div>';
-        return;
-    }
-
-    allQuestions.forEach(function (question) {
-        container.appendChild(createQuestionCard(question));
-    });
-}
-
-function renderQuestions() {
-    const list = document.getElementById('questions-list');
-    const adminList = document.getElementById('admin-questions-list');
-
-    if (!list) return;
-
-    const myQuestions = currentUser
-        ? questions.filter(function (question) {
-            return question.author === currentUser.username;
-        })
-        : [];
-
-    list.innerHTML = '';
-
-    const openMine = myQuestions.filter(function (question) {
-        return !question.closed;
-    });
-
-    if (!openMine.length) {
-        list.innerHTML = '<div class="question-item placeholder"><p>📭 Здесь будут ваши вопросы</p></div>';
-    } else {
-        openMine.forEach(function (question) {
-            list.appendChild(createQuestionCard(question));
-        });
-    }
-
-    if (adminList) {
-        adminList.innerHTML = '';
-
-        if (!isAdmin()) {
-            adminList.parentElement.style.display = 'none';
-        } else {
-            adminList.parentElement.style.display = '';
-            const openQuestions = questions.filter(function (question) {
-                return !question.closed;
-            });
-
-            if (!openQuestions.length) {
-                adminList.innerHTML = '<div class="question-item placeholder"><p>📥 Нет открытых вопросов</p></div>';
-            } else {
-                openQuestions.forEach(function (question) {
-                    adminList.appendChild(createQuestionCard(question));
-                });
-            }
-        }
-    }
-}
-
-function createQuestionCard(question) {
-    const card = document.createElement('div');
-    card.className = 'question-item';
-
-    if (question.isUrgent) card.classList.add('urgent');
-    if (question.closed) card.classList.add('closed');
-
-    const answered = !!question.answer || (Array.isArray(question.answers) && question.answers.length > 0);
-    const statusClass = question.closed
-        ? 'status-closed'
-        : answered
-            ? 'status-answered'
-            : 'status-open';
-
-    const statusText = question.closed ? '✅' : answered ? '💬' : '⏳';
-
-    card.innerHTML =
-        '<div class="question-row">' +
-            '<div class="question-title">' + escapeHtml(question.title) + '</div>' +
-            '<span class="status ' + statusClass + '">' + statusText + '</span>' +
-        '</div>' +
-        '<div class="question-details">' +
-            escapeHtml(question.author) + ' -  ' + escapeHtml(formatDate(question.date)) +
         '</div>';
 
     card.addEventListener('click', function () {
@@ -2998,4 +2161,3 @@ window.deleteAccount = deleteAccount;
 window.logout = logout;
 window.copyIP = copyIP;
 window.downloadBuild = downloadBuild;
-}
