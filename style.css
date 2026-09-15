@@ -90,7 +90,7 @@ select:focus-visible {
     outline-offset: 3px;
 }
 
-/* Кнопки-ссылки в формах */
+/* Кнопки-ссылки */
 
 .text-button,
 .link-button {
@@ -369,6 +369,7 @@ select:focus-visible {
     color: var(--text-muted);
     font-size: 18px;
     line-height: 1.6;
+    overflow-wrap: anywhere;
 }
 
 .hero-buttons {
@@ -621,6 +622,42 @@ textarea.form-input {
     color: var(--success);
     text-align: center;
     font-size: 13px;
+}
+
+/* Кнопки-ссылки в авторизации */
+
+.text-button,
+.link-button {
+    display: inline-block;
+    padding: 5px 9px;
+    color: var(--secondary);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1.4;
+    transition:
+        color 0.2s ease,
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.text-button {
+    display: block;
+    margin: 12px auto 0;
+}
+
+.text-button:hover,
+.text-button:focus-visible,
+.link-button:hover,
+.link-button:focus-visible {
+    color: white;
+    background: rgba(6, 182, 212, 0.12);
+    border-color: rgba(6, 182, 212, 0.35);
+    text-decoration: none;
+    transform: translateY(-1px);
 }
 
 /* Профиль */
@@ -1114,7 +1151,7 @@ textarea.form-input {
     min-width: 0;
 }
 
-/* Поддержка и вопросы */
+/* Вопросы */
 
 .questions-list {
     display: grid;
@@ -1366,6 +1403,458 @@ textarea.form-input {
     font-weight: 700;
 }
 
+/* Список изменений */
+
+.changelog-section {
+    width: 100%;
+    padding: 0 24px 80px;
+}
+
+.changelog-container {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+}
+
+.changelog-subtitle {
+    margin-top: -28px;
+    margin-bottom: 30px;
+    color: var(--text-muted);
+    text-align: center;
+    font-size: 14px;
+}
+
+.changelog-list,
+.admin-changelog-list {
+    display: grid;
+    gap: 16px;
+}
+
+.changelog-item {
+    position: relative;
+    min-width: 0;
+    padding: 22px 24px 22px 28px;
+    overflow: hidden;
+    background: rgba(21, 26, 45, 0.9);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        background 0.2s ease;
+}
+
+.changelog-item::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 4px;
+    background: linear-gradient(
+        180deg,
+        var(--secondary),
+        var(--primary)
+    );
+}
+
+.changelog-item:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--primary-light);
+    transform: translateY(-3px);
+}
+
+.changelog-item-title {
+    margin-bottom: 8px;
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.changelog-item-description {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.changelog-item-date {
+    margin-top: 14px;
+    color: var(--secondary);
+    font-size: 12px;
+}
+
+.admin-changelog-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 16px;
+    min-width: 0;
+    padding: 16px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.admin-changelog-content {
+    min-width: 0;
+}
+
+.admin-changelog-title {
+    margin-bottom: 6px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.admin-changelog-description {
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.admin-changelog-date {
+    margin-top: 8px;
+    color: var(--secondary);
+    font-size: 11px;
+}
+
+.admin-changelog-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.changelog-empty {
+    padding: 34px 20px;
+    color: var(--text-muted);
+    background: rgba(21, 26, 45, 0.7);
+    border: 1px dashed var(--border);
+    border-radius: 16px;
+    text-align: center;
+}
+
+/* Социальные сети */
+
+.social-section {
+    width: 100%;
+    padding: 0 24px 80px;
+}
+
+.social-container {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+}
+
+.social-subtitle {
+    margin-top: -28px;
+    margin-bottom: 30px;
+    color: var(--text-muted);
+    text-align: center;
+    font-size: 14px;
+}
+
+.social-links-list {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(220px, 1fr)
+    );
+    gap: 16px;
+}
+
+.social-link-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    padding: 18px;
+    color: white;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    text-decoration: none;
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.social-link-card:hover,
+.social-link-card:focus-visible {
+    color: white;
+    background: var(--bg-card-hover);
+    border-color: var(--social-color, var(--primary-light));
+    text-decoration: none;
+    transform: translateY(-4px);
+}
+
+.social-link-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 48px;
+    height: 48px;
+    color: white;
+    background: var(--social-color, var(--primary));
+    border-radius: 14px;
+    font-size: 26px;
+}
+
+.social-link-content {
+    min-width: 0;
+}
+
+.social-link-title {
+    display: block;
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.social-link-url {
+    display: block;
+    max-width: 100%;
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.social-empty {
+    padding: 32px 20px;
+    color: var(--text-muted);
+    background: rgba(21, 26, 45, 0.7);
+    border: 1px dashed var(--border);
+    border-radius: 16px;
+    text-align: center;
+}
+
+.social-icon-picker {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fill,
+        minmax(52px, 1fr)
+    );
+    gap: 8px;
+    max-height: 220px;
+    margin-bottom: 12px;
+    padding: 12px;
+    overflow-y: auto;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.social-icon-option {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    min-height: 44px;
+    color: white;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 24px;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.social-icon-option:hover,
+.social-icon-option:focus-visible,
+.social-icon-option.selected {
+    background: var(--bg-card-hover);
+    border-color: var(--secondary);
+    transform: translateY(-2px);
+}
+
+.selected-social-icon {
+    display: inline-flex;
+    align-items: center;
+    min-height: 38px;
+    padding: 8px 12px;
+    color: var(--secondary);
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    border-radius: 10px;
+    font-size: 14px;
+}
+
+.color-input {
+    width: 70px;
+    height: 44px;
+    padding: 3px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.admin-social-list {
+    display: grid;
+    gap: 12px;
+}
+
+.admin-social-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+    padding: 16px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.admin-social-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.admin-social-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    color: white;
+    background: var(--social-color, var(--primary));
+    border-radius: 12px;
+    font-size: 23px;
+}
+
+.admin-social-text {
+    min-width: 0;
+}
+
+.admin-social-title {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.admin-social-url {
+    max-width: 100%;
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-social-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Переполнение и динамические поля */
+
+html,
+body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.navbar,
+.nav-links,
+.nav-brand,
+.profile-container,
+.profile-content,
+.admin-container,
+.admin-card,
+.server-card,
+.server-info,
+.server-actions,
+.user-card,
+.user-row,
+.question-row {
+    min-width: 0;
+}
+
+#admin-ips-list,
+#admin-builds-list,
+#admin-features-custom,
+#admin-stats-custom {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+}
+
+#admin-ips-list > div,
+#admin-builds-list > div {
+    display: grid !important;
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        auto;
+    align-items: center;
+    gap: 10px !important;
+    width: 100%;
+}
+
+#admin-features-custom > div,
+#admin-stats-custom > div {
+    display: grid !important;
+    grid-template-columns:
+        28px
+        minmax(55px, 80px)
+        minmax(0, 1fr)
+        minmax(0, 1.5fr);
+    align-items: center;
+    gap: 8px !important;
+    width: 100%;
+}
+
+#admin-ips-list input,
+#admin-builds-list input,
+#admin-features-custom input,
+#admin-stats-custom input {
+    width: 100% !important;
+    min-width: 0;
+}
+
+.brand-text,
+.server-info > div,
+.server-name,
+.server-page-name,
+.user-value,
+.question-title,
+.question-details {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* Модальные окна */
+
+.modal {
+    overflow-y: auto;
+}
+
+.modal-content {
+    min-width: 0;
+    overflow-x: hidden;
+}
+
+.modal-content textarea,
+.modal-content input,
+.modal-content select {
+    max-width: 100%;
+}
+
 /* Адаптация */
 
 @media (max-width: 1024px) {
@@ -1382,7 +1871,10 @@ textarea.form-input {
 
     .features-grid,
     .stats-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(
+            2,
+            minmax(0, 1fr)
+        );
     }
 
     .profile-container,
@@ -1459,13 +1951,21 @@ textarea.form-input {
         padding: 42px 14px;
     }
 
+    .changelog-section,
+    .social-section {
+        padding-right: 14px;
+        padding-bottom: 55px;
+        padding-left: 14px;
+    }
+
     .section-title {
         font-size: 26px;
     }
 
     .features-grid,
     .stats-grid,
-    .servers-page-grid {
+    .servers-page-grid,
+    .social-links-list {
         grid-template-columns: minmax(0, 1fr);
     }
 
@@ -1588,13 +2088,32 @@ textarea.form-input {
 
     .admin-tabs {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(
+            2,
+            minmax(0, 1fr)
+        );
     }
 
     .admin-tab-btn {
         width: 100%;
         padding: 10px 8px;
         font-size: 12px;
+    }
+
+    .admin-social-item {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-social-actions {
+        display: grid;
+        grid-template-columns: repeat(
+            2,
+            minmax(0, 1fr)
+        );
+    }
+
+    .admin-social-actions .btn {
+        width: 100%;
     }
 }
 
@@ -1615,260 +2134,17 @@ textarea.form-input {
         padding: 24px 16px;
     }
 }
-/* Социальные сети */
 
-.social-section {
-    width: 100%;
-    padding: 0 24px 80px;
-}
+/* Анимация модальных окон */
 
-.social-container {
-    width: min(1100px, 100%);
-    margin: 0 auto;
-}
-
-.social-subtitle {
-    margin-top: -28px;
-    margin-bottom: 30px;
-    color: var(--text-muted);
-    text-align: center;
-    font-size: 14px;
-}
-
-.social-links-list {
-    display: grid;
-    grid-template-columns: repeat(
-        auto-fit,
-        minmax(220px, 1fr)
-    );
-    gap: 16px;
-}
-
-.social-link-card {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    min-width: 0;
-    padding: 18px;
-    color: white;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    text-decoration: none;
-    transition:
-        transform 0.2s ease,
-        border-color 0.2s ease,
-        background 0.2s ease,
-        box-shadow 0.2s ease;
-}
-
-.social-link-card:hover,
-.social-link-card:focus-visible {
-    color: white;
-    background: var(--bg-card-hover);
-    border-color: var(--social-color, var(--primary-light));
-    box-shadow:
-        0 8px 25px
-        color-mix(
-            in srgb,
-            var(--social-color, var(--primary)) 30%,
-            transparent
-        );
-    text-decoration: none;
-    transform: translateY(-4px);
-}
-
-.social-link-icon {
-    display: grid;
-    place-items: center;
-    flex: 0 0 auto;
-    width: 48px;
-    height: 48px;
-    color: white;
-    background: var(--social-color, var(--primary));
-    border-radius: 14px;
-    font-size: 26px;
-}
-
-.social-link-content {
-    min-width: 0;
-}
-
-.social-link-title {
-    color: var(--text);
-    font-size: 16px;
-    font-weight: 700;
-    overflow-wrap: anywhere;
-}
-
-.social-link-url {
-    margin-top: 4px;
-    color: var(--text-muted);
-    font-size: 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.social-empty {
-    padding: 32px 20px;
-    color: var(--text-muted);
-    background: rgba(21, 26, 45, 0.7);
-    border: 1px dashed var(--border);
-    border-radius: 16px;
-    text-align: center;
-}
-
-/* Выбор иконки в админке */
-
-.social-icon-picker {
-    display: grid;
-    grid-template-columns: repeat(
-        auto-fill,
-        minmax(52px, 1fr)
-    );
-    gap: 8px;
-    max-height: 220px;
-    margin-bottom: 12px;
-    padding: 12px;
-    overflow-y: auto;
-    background: var(--bg-dark);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-}
-
-.social-icon-option {
-    display: grid;
-    place-items: center;
-    width: 100%;
-    min-height: 44px;
-    color: white;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 24px;
-    transition:
-        background 0.2s ease,
-        border-color 0.2s ease,
-        transform 0.2s ease;
-}
-
-.social-icon-option:hover,
-.social-icon-option:focus-visible,
-.social-icon-option.selected {
-    background: var(--bg-card-hover);
-    border-color: var(--secondary);
-    transform: translateY(-2px);
-}
-
-.selected-social-icon {
-    display: inline-flex;
-    align-items: center;
-    min-height: 38px;
-    padding: 8px 12px;
-    color: var(--secondary);
-    background: rgba(6, 182, 212, 0.1);
-    border: 1px solid rgba(6, 182, 212, 0.3);
-    border-radius: 10px;
-    font-size: 14px;
-}
-
-.color-input {
-    width: 70px;
-    height: 44px;
-    padding: 3px;
-    background: var(--bg-dark);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    cursor: pointer;
-}
-
-/* Список соцсетей в админке */
-
-.admin-social-list {
-    display: grid;
-    gap: 12px;
-}
-
-.admin-social-item {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 16px;
-    min-width: 0;
-    padding: 16px;
-    background: var(--bg-dark);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-}
-
-.admin-social-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-width: 0;
-}
-
-.admin-social-icon {
-    display: grid;
-    place-items: center;
-    flex: 0 0 auto;
-    width: 42px;
-    height: 42px;
-    color: white;
-    background: var(--social-color, var(--primary));
-    border-radius: 12px;
-    font-size: 23px;
-}
-
-.admin-social-text {
-    min-width: 0;
-}
-
-.admin-social-title {
-    font-weight: 700;
-    overflow-wrap: anywhere;
-}
-
-.admin-social-url {
-    margin-top: 4px;
-    color: var(--text-muted);
-    font-size: 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.admin-social-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-@media (max-width: 700px) {
-    .social-section {
-        padding: 0 14px 55px;
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
     }
 
-    .social-subtitle {
-        margin-top: -16px;
-    }
-
-    .social-links-list {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .admin-social-item {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .admin-social-actions {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .admin-social-actions .btn {
-        width: 100%;
+    to {
+        opacity: 1;
+        transform: scale(1);
     }
 }
