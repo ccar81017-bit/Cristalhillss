@@ -950,6 +950,26 @@ function showForgotPassword() {
     if (forgotCard) forgotCard.style.display = 'block';
 }
 
+// ✅ ДОБАВИТЬ: setupForms
+function setupForms() {
+    const forms = [
+        ['login-form', handleLogin],
+        ['register-form', handleRegister],
+        ['question-form', handleQuestionSubmit],
+        ['forgot-form', handleForgotPassword],
+        ['promote-form', handlePromote],
+        ['add-server-form', handleAddServer],
+        ['assign-role-form', handleAssignRole]
+    ];
+
+    forms.forEach(function (item) {
+        const form = document.getElementById(item[0]);
+        if (!form || form.dataset.bound === 'true') return;
+        form.dataset.bound = 'true';
+        form.addEventListener('submit', item[1]);
+    });
+}
+
 /* =========================
    UI / ПРОФИЛЬ
 ========================= */
