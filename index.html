@@ -2,75 +2,41 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0a0e1a">
-
-    <title>
-        Cristalhills - Сюжетный Minecraft сервер
-    </title>
-
+    <title>Cristalhills — Minecraft Server</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <nav class="navbar">
-        <div
-            class="nav-brand"
-            id="brand-button"
-            role="button"
-            tabindex="0"
-        >
+        <div class="nav-brand" id="brand-button" role="button" tabindex="0">
             <span class="logo">💎</span>
 
             <div class="brand-text">
-                <span
-                    class="brand-name"
-                    id="current-server-name"
-                >
+                <span class="brand-name" id="current-server-name">
                     Cristalhills
                 </span>
-
-                <span class="brand-tag">
-                    Minecraft Server
-                </span>
+                <span class="brand-tag">Minecraft Server</span>
             </div>
         </div>
 
         <div class="nav-links">
-            <a
-                href="#"
-                class="nav-link active"
-                data-page="home"
-            >
+            <a href="#" class="nav-link active" data-page="home">
                 <span class="nav-icon">🏠</span>
                 <span>Главная</span>
             </a>
 
-            <a
-                href="#"
-                class="nav-link"
-                data-page="servers-list"
-            >
+            <a href="#" class="nav-link" data-page="servers-list">
                 <span class="nav-icon">🌐</span>
                 <span>Серверы</span>
             </a>
 
-            <a
-                href="#"
-                class="nav-link"
-                data-page="support"
-            >
+            <a href="#" class="nav-link" data-page="support">
                 <span class="nav-icon">💬</span>
                 <span>Поддержка</span>
             </a>
 
-            <a
-                href="#"
-                class="nav-link"
-                data-page="profile"
-            >
+            <a href="#" class="nav-link" data-page="profile">
                 <span class="nav-icon">👤</span>
                 <span>Профиль</span>
             </a>
@@ -80,18 +46,13 @@
                 class="nav-link"
                 id="admin-panel-link"
                 data-page="admin"
-                style="display: none;"
+                style="display:none;"
             >
                 <span class="nav-icon">🎛️</span>
-                <span>Админ-панель</span>
+                <span>Админка</span>
             </a>
 
-            <a
-                href="#"
-                class="nav-link"
-                id="auth-link"
-                data-page="auth"
-            >
+            <a href="#" class="nav-link" id="auth-link" data-page="auth">
                 <span class="nav-icon">🔑</span>
                 <span>Войти</span>
             </a>
@@ -99,289 +60,93 @@
     </nav>
 
     <main>
-        <!-- Главная -->
-        <section
-            id="home-page"
-            class="page active"
-        >
+        <section id="home-page" class="page active">
             <section class="hero">
                 <div class="hero-content">
-                    <div
-                        class="server-status"
-                        id="server-status"
-                    >
+                    <div class="server-status" id="server-status">
                         <span class="status-dot"></span>
-                        <span id="status-text">
-                            Сервер онлайн
-                        </span>
+                        <span id="status-text">Сервер онлайн</span>
                     </div>
 
-                    <h1
-                        class="hero-title"
-                        id="hero-server-name"
-                    >
-                        Cristal
-                        <span class="highlight">hills</span>
+                    <h1 class="hero-title" id="hero-server-name">
+                        Cristal<span class="highlight">hills</span>
                     </h1>
 
-                    <p
-                        class="hero-subtitle"
-                        id="hero-description"
-                    >
-                        Cristalhills — проект со своим сюжетом
-                        и квестами.
-                    </p>
+                    <p class="hero-subtitle" id="hero-description"></p>
 
-                    <div
-                        class="hero-buttons"
-                        id="ip-buttons"
-                    ></div>
-
-                    <div
-                        id="ip-copy-msg"
-                        class="copy-message"
-                    ></div>
+                    <div class="hero-buttons" id="ip-buttons"></div>
+                    <div id="ip-copy-msg" class="copy-message"></div>
                 </div>
             </section>
 
             <section class="features">
-                <h2
-                    class="section-title"
-                    id="features-title"
-                >
+                <h2 class="section-title" id="features-title">
                     Почему Cristalhills?
                 </h2>
 
                 <div class="features-grid">
                     <article class="feature-card">
-                        <div
-                            class="feature-icon"
-                            id="feature-icon-1"
-                        >
-                            📖
-                        </div>
-
-                        <h3 id="feature-title-1">
-                            Сюжетные квесты
-                        </h3>
-
-                        <p id="feature-desc-1">
-                            Уникальная история
-                        </p>
+                        <div class="feature-icon" id="feature-icon-1">📖</div>
+                        <h3 id="feature-title-1">Сюжетные квесты</h3>
+                        <p id="feature-desc-1"></p>
                     </article>
 
                     <article class="feature-card">
-                        <div
-                            class="feature-icon"
-                            id="feature-icon-2"
-                        >
-                            ⚔️
-                        </div>
-
-                        <h3 id="feature-title-2">
-                            PvP сражения
-                        </h3>
-
-                        <p id="feature-desc-2">
-                            Сбалансированные бои
-                        </p>
+                        <div class="feature-icon" id="feature-icon-2">⚔️</div>
+                        <h3 id="feature-title-2">PvP сражения</h3>
+                        <p id="feature-desc-2"></p>
                     </article>
 
                     <article class="feature-card">
-                        <div
-                            class="feature-icon"
-                            id="feature-icon-3"
-                        >
-                            🏰
-                        </div>
-
-                        <h3 id="feature-title-3">
-                            Строительство
-                        </h3>
-
-                        <p id="feature-desc-3">
-                            Создавай замки
-                        </p>
+                        <div class="feature-icon" id="feature-icon-3">🏰</div>
+                        <h3 id="feature-title-3">Строительство</h3>
+                        <p id="feature-desc-3"></p>
                     </article>
 
                     <article class="feature-card">
-                        <div
-                            class="feature-icon"
-                            id="feature-icon-4"
-                        >
-                            👥
-                        </div>
-
-                        <h3 id="feature-title-4">
-                            Комьюнити
-                        </h3>
-
-                        <p id="feature-desc-4">
-                            Играйте вместе
-                        </p>
+                        <div class="feature-icon" id="feature-icon-4">👥</div>
+                        <h3 id="feature-title-4">Комьюнити</h3>
+                        <p id="feature-desc-4"></p>
                     </article>
                 </div>
             </section>
 
             <section class="stats">
-                <h2
-                    class="section-title"
-                    id="stats-title"
-                >
+                <h2 class="section-title" id="stats-title">
                     Информация о сервере
                 </h2>
 
                 <div class="stats-grid">
                     <article class="stat-card">
-                        <div
-                            class="stat-icon"
-                            id="stat-icon-1"
-                        >
-                            🎮
-                        </div>
-
-                        <div
-                            class="stat-number"
-                            id="stat-value-1"
-                        >
-                            1.20.4
-                        </div>
-
-                        <div
-                            class="stat-label"
-                            id="stat-label-1"
-                        >
-                            Версия Minecraft
-                        </div>
+                        <div class="stat-icon" id="stat-icon-1">🎮</div>
+                        <div class="stat-number" id="stat-value-1"></div>
+                        <div class="stat-label" id="stat-label-1"></div>
                     </article>
 
                     <article class="stat-card">
-                        <div
-                            class="stat-icon"
-                            id="stat-icon-2"
-                        >
-                            🌍
-                        </div>
-
-                        <div
-                            class="stat-number"
-                            id="stat-value-2"
-                        >
-                            3+
-                        </div>
-
-                        <div
-                            class="stat-label"
-                            id="stat-label-2"
-                        >
-                            Регионов
-                        </div>
+                        <div class="stat-icon" id="stat-icon-2">🌍</div>
+                        <div class="stat-number" id="stat-value-2"></div>
+                        <div class="stat-label" id="stat-label-2"></div>
                     </article>
 
                     <article class="stat-card">
-                        <div
-                            class="stat-icon"
-                            id="stat-icon-3"
-                        >
-                            📜
-                        </div>
-
-                        <div
-                            class="stat-number"
-                            id="stat-value-3"
-                        >
-                            50+
-                        </div>
-
-                        <div
-                            class="stat-label"
-                            id="stat-label-3"
-                        >
-                            Квестов
-                        </div>
+                        <div class="stat-icon" id="stat-icon-3">📜</div>
+                        <div class="stat-number" id="stat-value-3"></div>
+                        <div class="stat-label" id="stat-label-3"></div>
                     </article>
 
                     <article class="stat-card">
-                        <div
-                            class="stat-icon"
-                            id="stat-icon-4"
-                        >
-                            ⚡
-                        </div>
-
-                        <div
-                            class="stat-number"
-                            id="stat-value-4"
-                        >
-                            24/7
-                        </div>
-
-                        <div
-                            class="stat-label"
-                            id="stat-label-4"
-                        >
-                            Работа сервера
-                        </div>
+                        <div class="stat-icon" id="stat-icon-4">⚡</div>
+                        <div class="stat-number" id="stat-value-4"></div>
+                        <div class="stat-label" id="stat-label-4"></div>
                     </article>
-                </div>
-            </section>
-
-            <!-- Список изменений -->
-            <section class="changelog-section">
-                <div class="changelog-container">
-                    <h2 class="section-title">
-                        📝 Список изменений
-                    </h2>
-
-                    <p class="changelog-subtitle">
-                        Последние обновления проекта
-                    </p>
-
-                    <div
-                        id="changelog-list"
-                        class="changelog-list"
-                    >
-                        <div class="changelog-empty">
-                            Изменения загружаются...
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Социальные сети -->
-            <section class="social-section">
-                <div class="social-container">
-                    <h2 class="section-title">
-                        🔗 Мы в социальных сетях
-                    </h2>
-
-                    <p class="social-subtitle">
-                        Подписывайтесь на наши новости
-                        и обновления
-                    </p>
-
-                    <div
-                        id="social-links-list"
-                        class="social-links-list"
-                    >
-                        <div class="social-empty">
-                            Социальные сети загружаются...
-                        </div>
-                    </div>
                 </div>
             </section>
         </section>
 
-        <!-- Серверы -->
-        <section
-            id="servers-list-page"
-            class="page"
-        >
+        <section id="servers-list-page" class="page">
             <div class="servers-page-container">
-                <h2 class="section-title">
-                    🌐 Ветки серверов
-                </h2>
-
+                <h2 class="section-title">🌐 Ветки серверов</h2>
                 <p class="servers-page-desc">
                     Выберите сервер для подключения
                 </p>
@@ -393,46 +158,30 @@
             </div>
         </section>
 
-        <!-- Авторизация -->
-        <section
-            id="auth-page"
-            class="page"
-        >
+        <section id="auth-page" class="page">
             <div class="auth-container">
-                <!-- Вход -->
-                <div
-                    class="auth-card"
-                    id="login-card"
-                >
-                    <h2 class="auth-title">
-                        🔐 Вход в аккаунт
-                    </h2>
+                <div class="auth-card" id="login-card">
+                    <h2 class="auth-title">🔐 Вход в аккаунт</h2>
 
                     <form id="login-form">
                         <div class="form-group">
                             <label for="login-username">
                                 Имя пользователя
                             </label>
-
                             <input
                                 type="text"
                                 id="login-username"
                                 class="form-input"
-                                placeholder="Введите логин"
                                 required
                             >
                         </div>
 
                         <div class="form-group">
-                            <label for="login-password">
-                                Пароль
-                            </label>
-
+                            <label for="login-password">Пароль</label>
                             <input
                                 type="password"
                                 id="login-password"
                                 class="form-input"
-                                placeholder="Введите пароль"
                                 required
                             >
                         </div>
@@ -441,13 +190,10 @@
                             type="submit"
                             class="btn btn-primary btn-full"
                         >
-                            Войти →
+                            Войти
                         </button>
 
-                        <div
-                            id="login-error"
-                            class="error-message"
-                        ></div>
+                        <div id="login-error" class="error-message"></div>
 
                         <button
                             type="button"
@@ -460,7 +206,6 @@
 
                     <div class="auth-switch">
                         Нет аккаунта?
-
                         <button
                             type="button"
                             class="link-button"
@@ -471,42 +216,33 @@
                     </div>
                 </div>
 
-                <!-- Регистрация -->
                 <div
                     class="auth-card"
                     id="register-card"
-                    style="display: none;"
+                    style="display:none;"
                 >
-                    <h2 class="auth-title">
-                        ✨ Регистрация
-                    </h2>
+                    <h2 class="auth-title">✨ Регистрация</h2>
 
                     <form id="register-form">
                         <div class="form-group">
                             <label for="register-username">
                                 Имя пользователя
                             </label>
-
                             <input
                                 type="text"
                                 id="register-username"
                                 class="form-input"
-                                placeholder="Придумайте логин"
                                 minlength="3"
                                 required
                             >
                         </div>
 
                         <div class="form-group">
-                            <label for="register-email">
-                                Email
-                            </label>
-
+                            <label for="register-email">Email</label>
                             <input
                                 type="email"
                                 id="register-email"
                                 class="form-input"
-                                placeholder="example@mail.com"
                                 required
                             >
                         </div>
@@ -515,12 +251,10 @@
                             <label for="register-password">
                                 Пароль
                             </label>
-
                             <input
                                 type="password"
                                 id="register-password"
                                 class="form-input"
-                                placeholder="Минимум 4 символа"
                                 minlength="4"
                                 required
                             >
@@ -530,12 +264,10 @@
                             <label for="register-confirm">
                                 Подтвердите пароль
                             </label>
-
                             <input
                                 type="password"
                                 id="register-confirm"
                                 class="form-input"
-                                placeholder="Повторите пароль"
                                 required
                             >
                         </div>
@@ -544,7 +276,7 @@
                             type="submit"
                             class="btn btn-primary btn-full"
                         >
-                            Зарегистрироваться →
+                            Зарегистрироваться
                         </button>
 
                         <div
@@ -560,7 +292,6 @@
 
                     <div class="auth-switch">
                         Уже есть аккаунт?
-
                         <button
                             type="button"
                             class="link-button"
@@ -571,41 +302,32 @@
                     </div>
                 </div>
 
-                <!-- Восстановление -->
                 <div
                     class="auth-card"
                     id="forgot-card"
-                    style="display: none;"
+                    style="display:none;"
                 >
-                    <h2 class="auth-title">
-                        🔑 Восстановление пароля
-                    </h2>
+                    <h2 class="auth-title">🔑 Восстановление</h2>
 
                     <form id="forgot-form">
                         <div class="form-group">
                             <label for="forgot-username">
                                 Имя пользователя
                             </label>
-
                             <input
                                 type="text"
                                 id="forgot-username"
                                 class="form-input"
-                                placeholder="Введите логин"
                                 required
                             >
                         </div>
 
                         <div class="form-group">
-                            <label for="forgot-email">
-                                Email
-                            </label>
-
+                            <label for="forgot-email">Email</label>
                             <input
                                 type="email"
                                 id="forgot-email"
                                 class="form-input"
-                                placeholder="Введите email"
                                 required
                             >
                         </div>
@@ -614,18 +336,11 @@
                             type="submit"
                             class="btn btn-primary btn-full"
                         >
-                            Отправить запрос →
+                            Отправить ссылку
                         </button>
 
-                        <div
-                            id="forgot-error"
-                            class="error-message"
-                        ></div>
-
-                        <div
-                            id="forgot-success"
-                            class="success-message"
-                        ></div>
+                        <div id="forgot-error" class="error-message"></div>
+                        <div id="forgot-success" class="success-message"></div>
                     </form>
 
                     <div class="auth-switch">
@@ -641,17 +356,11 @@
             </div>
         </section>
 
-        <!-- Профиль -->
-        <section
-            id="profile-page"
-            class="page"
-        >
+        <section id="profile-page" class="page">
             <div class="profile-container">
                 <aside class="profile-sidebar">
                     <div class="profile-avatar">
-                        <span id="profile-avatar-letter">
-                            G
-                        </span>
+                        <span id="profile-avatar-letter">G</span>
                     </div>
 
                     <h3
@@ -682,48 +391,35 @@
                     </div>
 
                     <div class="profile-section">
-                        <h3>
-                            ℹ️ Информация об аккаунте
-                        </h3>
+                        <h3>ℹ️ Информация об аккаунте</h3>
 
                         <div class="info-grid">
                             <div class="info-item">
-                                <span class="info-label">
-                                    Email:
-                                </span>
-
+                                <span class="info-label">Email:</span>
                                 <span
                                     class="info-value"
                                     id="profile-email"
-                                >
-                                    не указан
-                                </span>
+                                ></span>
                             </div>
 
                             <div class="info-item">
                                 <span class="info-label">
                                     Дата регистрации:
                                 </span>
-
                                 <span
                                     class="info-value"
                                     id="profile-reg-date"
-                                >
-                                    -
-                                </span>
+                                ></span>
                             </div>
 
                             <div class="info-item">
                                 <span class="info-label">
                                     Последний вход:
                                 </span>
-
                                 <span
                                     class="info-value"
                                     id="profile-last-login"
-                                >
-                                    -
-                                </span>
+                                ></span>
                             </div>
                         </div>
                     </div>
@@ -759,15 +455,10 @@
             </div>
         </section>
 
-        <!-- Админ-панель -->
-        <section
-            id="admin-page"
-            class="page"
-        >
+        <section id="admin-page" class="page">
             <div class="admin-container">
                 <div class="admin-header">
                     <h1>🎛️ Панель администратора</h1>
-
                     <p class="admin-subtitle">
                         Управление сервером
                     </p>
@@ -801,23 +492,8 @@
                     >
                         📬 Вопросы
                     </button>
-
-                    <button
-                        class="admin-tab-btn"
-                        onclick="switchAdminTab('changelog')"
-                    >
-                        📝 Изменения
-                    </button>
-
-                    <button
-                        class="admin-tab-btn"
-                        onclick="switchAdminTab('socials')"
-                    >
-                        🔗 Соцсети
-                    </button>
                 </div>
 
-                <!-- Ветки -->
                 <div
                     id="admin-tab-servers"
                     class="admin-tab-content active"
@@ -839,15 +515,12 @@
                     </div>
                 </div>
 
-                <!-- Настройки -->
                 <div
                     id="admin-tab-settings"
                     class="admin-tab-content"
                 >
                     <div class="admin-card">
-                        <h3>
-                            ⚙️ Настройки сервера
-                        </h3>
+                        <h3>⚙️ Настройки сервера</h3>
 
                         <div class="form-group">
                             <label for="admin-status">
@@ -858,17 +531,11 @@
                                 id="admin-status"
                                 class="form-input"
                             >
-                                <option value="online">
-                                    🟢 Онлайн
-                                </option>
-
+                                <option value="online">🟢 Онлайн</option>
                                 <option value="maintenance">
                                     🟠 Обслуживание
                                 </option>
-
-                                <option value="offline">
-                                    🔴 Оффлайн
-                                </option>
+                                <option value="offline">🔴 Оффлайн</option>
                             </select>
                         </div>
 
@@ -893,7 +560,6 @@
                                 type="text"
                                 id="admin-features-title"
                                 class="form-input"
-                                placeholder="Почему Cristalhills?"
                             >
                         </div>
 
@@ -906,16 +572,12 @@
                                 type="text"
                                 id="admin-version"
                                 class="form-input"
-                                placeholder="1.20.4"
                             >
                         </div>
 
                         <div class="form-group">
                             <label>IP адреса</label>
-
-                            <div
-                                id="admin-ips-list"
-                            ></div>
+                            <div id="admin-ips-list"></div>
 
                             <button
                                 class="btn btn-secondary btn-sm"
@@ -927,10 +589,7 @@
 
                         <div class="form-group">
                             <label>Сборки</label>
-
-                            <div
-                                id="admin-builds-list"
-                            ></div>
+                            <div id="admin-builds-list"></div>
 
                             <button
                                 class="btn btn-secondary btn-sm"
@@ -942,15 +601,13 @@
 
                         <hr class="admin-divider">
 
-                        <h4>🎨 Преимущества</h4>
-
+                        <h4>🎨 Карточки преимуществ</h4>
                         <div
                             id="admin-features-custom"
                             class="admin-fields-grid"
                         ></div>
 
-                        <h4>📊 Статистика</h4>
-
+                        <h4>📊 Карточки статистики</h4>
                         <div
                             id="admin-stats-custom"
                             class="admin-fields-grid"
@@ -970,7 +627,6 @@
                     </div>
                 </div>
 
-                <!-- Пользователи -->
                 <div
                     id="admin-tab-users"
                     class="admin-tab-content"
@@ -988,9 +644,7 @@
                             >
                         </div>
 
-                        <div
-                            class="users-scroll-container"
-                        >
+                        <div class="users-scroll-container">
                             <div
                                 id="users-list"
                                 class="users-list"
@@ -999,7 +653,6 @@
                     </div>
                 </div>
 
-                <!-- Вопросы -->
                 <div
                     id="admin-tab-questions"
                     class="admin-tab-content"
@@ -1013,213 +666,12 @@
                         ></div>
                     </div>
                 </div>
-
-                <!-- Изменения -->
-                <div
-                    id="admin-tab-changelog"
-                    class="admin-tab-content"
-                >
-                    <div class="admin-card">
-                        <h3>
-                            📝 Управление изменениями
-                        </h3>
-
-                        <form id="changelog-form">
-                            <input
-                                type="hidden"
-                                id="changelog-edit-id"
-                            >
-
-                            <div class="form-group">
-                                <label for="changelog-title">
-                                    Заголовок изменения
-                                </label>
-
-                                <input
-                                    type="text"
-                                    id="changelog-title"
-                                    class="form-input"
-                                    placeholder="Добавлена новая ветка"
-                                    required
-                                >
-                            </div>
-
-                            <div class="form-group">
-                                <label for="changelog-description">
-                                    Текст изменения
-                                </label>
-
-                                <textarea
-                                    id="changelog-description"
-                                    class="form-input"
-                                    rows="5"
-                                    placeholder="Опишите изменение..."
-                                    required
-                                ></textarea>
-                            </div>
-
-                            <div class="modal-buttons">
-                                <button
-                                    type="submit"
-                                    class="btn btn-primary"
-                                >
-                                    💾 Сохранить
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="btn btn-secondary"
-                                    onclick="resetChangelogForm()"
-                                >
-                                    Очистить
-                                </button>
-                            </div>
-
-                            <div
-                                id="changelog-save-message"
-                                class="success-message"
-                            ></div>
-                        </form>
-
-                        <hr class="admin-divider">
-
-                        <h4>
-                            Опубликованные изменения
-                        </h4>
-
-                        <div
-                            id="admin-changelog-list"
-                            class="admin-changelog-list"
-                        ></div>
-                    </div>
-                </div>
-
-                <!-- Соцсети -->
-                <div
-                    id="admin-tab-socials"
-                    class="admin-tab-content"
-                >
-                    <div class="admin-card">
-                        <h3>
-                            🔗 Управление соцсетями
-                        </h3>
-
-                        <form id="social-form">
-                            <input
-                                type="hidden"
-                                id="social-edit-id"
-                            >
-
-                            <div class="form-group">
-                                <label for="social-title">
-                                    Название
-                                </label>
-
-                                <input
-                                    type="text"
-                                    id="social-title"
-                                    class="form-input"
-                                    placeholder="Telegram"
-                                    required
-                                >
-                            </div>
-
-                            <div class="form-group">
-                                <label for="social-url">
-                                    Ссылка
-                                </label>
-
-                                <input
-                                    type="url"
-                                    id="social-url"
-                                    class="form-input"
-                                    placeholder="https://t.me/example"
-                                    required
-                                >
-                            </div>
-
-                            <div class="form-group">
-                                <label>Иконка</label>
-
-                                <div
-                                    id="social-icon-picker"
-                                    class="social-icon-picker"
-                                ></div>
-
-                                <input
-                                    type="hidden"
-                                    id="social-icon"
-                                    value="🔗"
-                                >
-
-                                <div
-                                    id="selected-social-icon"
-                                    class="selected-social-icon"
-                                >
-                                    Выбрано: 🔗
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="social-color">
-                                    Цвет кнопки
-                                </label>
-
-                                <input
-                                    type="color"
-                                    id="social-color"
-                                    class="color-input"
-                                    value="#6366f1"
-                                >
-                            </div>
-
-                            <div class="modal-buttons">
-                                <button
-                                    type="submit"
-                                    class="btn btn-primary"
-                                >
-                                    💾 Сохранить
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="btn btn-secondary"
-                                    onclick="resetSocialForm()"
-                                >
-                                    Очистить
-                                </button>
-                            </div>
-
-                            <div
-                                id="social-save-message"
-                                class="success-message"
-                            ></div>
-                        </form>
-
-                        <hr class="admin-divider">
-
-                        <h4>
-                            Опубликованные соцсети
-                        </h4>
-
-                        <div
-                            id="admin-social-list"
-                            class="admin-social-list"
-                        ></div>
-                    </div>
-                </div>
             </div>
         </section>
 
-        <!-- Поддержка -->
-        <section
-            id="support-page"
-            class="page"
-        >
+        <section id="support-page" class="page">
             <div class="support-container">
-                <h2 class="section-title">
-                    💬 Поддержка
-                </h2>
+                <h2 class="section-title">💬 Поддержка</h2>
 
                 <div class="support-grid">
                     <div class="support-questions">
@@ -1241,14 +693,9 @@
                     <div
                         class="support-answers"
                         id="admin-panel"
-                        style="display: none;"
+                        style="display:none;"
                     >
-                        <h3>
-                            🎛️ Админ
-                            <span class="admin-badge">
-                                ADMIN
-                            </span>
-                        </h3>
+                        <h3>🎛️ Админ</h3>
 
                         <div
                             id="admin-questions-list"
@@ -1260,20 +707,13 @@
         </section>
     </main>
 
-    <!-- Вопрос -->
-    <div
-        id="new-question-modal"
-        class="modal"
-    >
+    <div id="new-question-modal" class="modal">
         <div class="modal-content">
             <h3>✨ Новый вопрос</h3>
 
             <form id="question-form">
                 <div class="form-group">
-                    <label for="question-title">
-                        Заголовок
-                    </label>
-
+                    <label for="question-title">Заголовок</label>
                     <input
                         type="text"
                         id="question-title"
@@ -1294,30 +734,15 @@
                         <option value="technical">
                             🔧 Техническая проблема
                         </option>
-
-                        <option value="gameplay">
-                            🎮 Игра
-                        </option>
-
-                        <option value="donation">
-                            💎 Донат
-                        </option>
-
-                        <option value="other">
-                            ❓ Другое
-                        </option>
-
-                        <option value="password">
-                            🔑 Пароль
-                        </option>
+                        <option value="gameplay">🎮 Игра</option>
+                        <option value="donation">💎 Донат</option>
+                        <option value="other">❓ Другое</option>
+                        <option value="password">🔑 Пароль</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="question-text">
-                        Описание
-                    </label>
-
+                    <label for="question-text">Описание</label>
                     <textarea
                         id="question-text"
                         class="form-input"
@@ -1346,23 +771,17 @@
         </div>
     </div>
 
-    <!-- Просмотр вопроса -->
-    <div
-        id="view-question-modal"
-        class="modal"
-    >
+    <div id="view-question-modal" class="modal">
         <div class="modal-content modal-large">
             <h3 id="view-question-title"></h3>
 
             <div class="question-meta">
                 <span id="view-question-author"></span>
                 <span id="view-question-date"></span>
-
                 <span
                     id="view-question-category"
                     class="category-badge"
                 ></span>
-
                 <span
                     id="view-question-status-badge"
                     class="status-badge"
@@ -1430,15 +849,9 @@
         </div>
     </div>
 
-    <!-- Назначение администратора -->
-    <div
-        id="promote-modal"
-        class="modal"
-    >
+    <div id="promote-modal" class="modal">
         <div class="modal-content">
-            <h3>
-                👑 Назначить администратора
-            </h3>
+            <h3>👑 Назначить администратора</h3>
 
             <form id="promote-form">
                 <input
@@ -1447,9 +860,7 @@
                 >
 
                 <div class="form-group">
-                    <label for="promote-rank">
-                        Роль
-                    </label>
+                    <label for="promote-rank">Роль</label>
 
                     <select
                         id="promote-rank"
@@ -1458,7 +869,6 @@
                         <option value="Мл.Админ">
                             🔹 Мл.Админ
                         </option>
-
                         <option value="Гл.Админ">
                             👑 Гл.Админ
                         </option>
@@ -1485,15 +895,9 @@
         </div>
     </div>
 
-    <!-- Назначение за сервер -->
-    <div
-        id="assign-role-modal"
-        class="modal"
-    >
+    <div id="assign-role-modal" class="modal">
         <div class="modal-content">
-            <h3>
-                🖥️ Назначить роль за сервер
-            </h3>
+            <h3>🖥️ Назначить роль за сервер</h3>
 
             <form id="assign-role-form">
                 <input
@@ -1502,10 +906,7 @@
                 >
 
                 <div class="form-group">
-                    <label for="assign-server">
-                        Сервер
-                    </label>
-
+                    <label for="assign-server">Сервер</label>
                     <select
                         id="assign-server"
                         class="form-input"
@@ -1513,10 +914,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="assign-role">
-                        Роль
-                    </label>
-
+                    <label for="assign-role">Роль</label>
                     <select
                         id="assign-role"
                         class="form-input"
@@ -1524,7 +922,6 @@
                         <option value="chief">
                             👑 Главный за сервер
                         </option>
-
                         <option value="helper">
                             🔹 Помощник
                         </option>
@@ -1551,11 +948,7 @@
         </div>
     </div>
 
-    <!-- Добавление сервера -->
-    <div
-        id="add-server-modal"
-        class="modal"
-    >
+    <div id="add-server-modal" class="modal">
         <div class="modal-content">
             <h3>🌐 Новая ветка</h3>
 
@@ -1569,7 +962,6 @@
                         type="text"
                         id="new-server-name"
                         class="form-input"
-                        placeholder="Cristalhills"
                         required
                     >
                 </div>
@@ -1595,6 +987,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js?v=15"></script>
+    <script src="script.js?v=6"></script>
 </body>
 </html>
