@@ -3546,37 +3546,3 @@ Object.assign(window, {
     deleteSocialLink,
     resetSocialForm
 });
-document.addEventListener(
-    "DOMContentLoaded",
-    function() {
-        const loginForm =
-            document.getElementById("login-form");
-
-        const registerForm =
-            document.getElementById("register-form");
-
-        const forgotForm =
-            document.getElementById("forgot-form");
-
-        if (loginForm) {
-            loginForm.addEventListener(
-                "submit",
-                handleLogin
-            );
-        }
-
-        if (registerForm) {
-            registerForm.addEventListener(
-                "submit",
-                handleRegister
-            );
-        }
-
-        if (forgotForm) {
-            forgotForm.addEventListener(
-                "submit",
-                handleForgotPassword
-            );
-        }
-    }
-);
